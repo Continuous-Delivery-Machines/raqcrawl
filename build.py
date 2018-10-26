@@ -1,8 +1,10 @@
 from pybuilder.core import init, use_plugin, Author, Project
 import subprocess
-
+import os
 
 def currentGitVersionTag():
+    if os.environ.get("TRAVIS") == "true":
+        return "0.0.TRAVIS0"
     exit_core, s = subprocess.getstatusoutput("git describe")
     if exit_core != 0:
         raise RuntimeError("Unable to get git version")
