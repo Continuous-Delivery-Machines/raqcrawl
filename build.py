@@ -1,5 +1,13 @@
-from pybuilder.core import init, use_plugin, Author, Project, task, before
-from os import system
+from pybuilder.core import init, use_plugin, Author, Project
+import subprocess
+
+
+def currentGitVersionTag():
+    exit_core, s = subprocess.getstatusoutput("git describe")
+    if exit_core != 0:
+        raise RuntimeError("Unable to get git version")
+    return s
+
 
 use_plugin("python.core")
 use_plugin("python.unittest")
@@ -8,22 +16,21 @@ use_plugin("python.install_dependencies")
 use_plugin("python.distutils")
 use_plugin('python.pycharm')
 
-authors = [Author('Marvin Lukas Wenzel', 'wenzel@th-brandenburg.de', ["Backend Guru"])]
-
 description = """
 <Insert descriptive description here>
 """
-
+authors = [Author('Marvin Lukas Wenzel', 'wenzel@th-brandenburg.de', ["Backend Guru"])]
 name = 'raqcrawler'
 license = 'Apache License, Version 2.0'
 summary = 'Crawler for the R.A.Q. project.'
-url = 'www.whatthecommit.com'
-version = '0.0.dev1'
+url = 'http://www.whatthecommit.com'
+version = currentGitVersionTag()
 
 default_task = "run_unit_tests"
 
+
 @init
-def initialize(project : Project):
+def initialize(project: Project):
     project.build_depends_on('mockito')
     project.build_depends_on('PyHamcrest')
     project.depends_on('requests')
