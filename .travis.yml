@@ -1,0 +1,10 @@
+language: python
+python:
+  - '3.4'
+install:
+  - pip install pybuilder
+script:
+  - pyb clean install_dependencies run_unit_tests run_integration_tests
+env:
+  global:
+    secure: ZO2fFjhLNUrzsq+YoRuTX8E67jORmpSvw9ko2g21MLkwFbPNfq3vnvYNybeR4zSBQ4cranJrqnAClbUuT/jutCBeZ44czNIZy2WQ4ZqcSP6cLIyWeQfUFwE4jT6qVwRvfutzCwFAO6JNzF3hoUU0AufxXD+OcwBqYvOQk78w+oymdjFb640Dd2Y6lRKJv4Xc+VR9tbcmYwqDxPVBk3J2h10wunZnm5+rax8YOjc2/WXCPG/ZzXjs8Ua/kGaJ4SpJfrlOXnulYGMGEoW2CSnf5J7gAu0wY0it9JREMDIxmcWse2yDCTstoOV2ib5BaBCIJ5phl72hiEb4bIbexsfwi3DbaBbdsBJjJksdLRwNCtLqYoZgTEfaPxKqmH0YguqgRO3kw3ZsPuSJ1cZ0hodU1K2p4k2ERjNjUQWqMIP0CnvON/Vc3VD0M+HSyvTxCPAz1V2oLcKqvkhFqYK4L1xRZy+7c5+/gtyuyVHcpyOIvpRClnOYEIQTI3LZeqeZALlp4jfzyxIBOIiT5FhpigL1hSAQxDlR9gTgcmcUfeXeSQ8DgxmQk9cW/3TErujiKI2z16iSWGk67+/A1+qCEVPOw7YKJxWa9l4ozwXG+fLNGW5sTFD0Ym8EL3u1/Up+qVTavDDJyxginY3FJd3yOSYPTsy/GqrFetChtXY0mliZxzk=
