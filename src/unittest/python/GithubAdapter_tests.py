@@ -19,7 +19,7 @@ class GithubAdapterTest(unittest.TestCase):
         assert_that(body, not_none())
         assert_that(body, has_entries())
 
-    def test_request_current_sessions_user_unautherizes(self):
+    def test_request_current_sessions_user_unauthorized(self):
         githubAdapter = GithubAdapter()
         headers, body = githubAdapter.requestApi('/user')
 
@@ -28,9 +28,10 @@ class GithubAdapterTest(unittest.TestCase):
         assert_that(body, not_none())
         assert_that(body, has_entries())
 
-    def test_login_via_username_and_token(self):
+    def test_authorization_via_user_request(self):
         githubAdapter = GithubAdapter()
-        headers, body = githubAdapter.login(personal_acess_token=self.__personal_access_token)
+        githubAdapter.set_credentials(personal_acess_token=self.__personal_access_token)
+        headers, body = githubAdapter.requestApi('/user')
 
         assert_that(headers["Status"], is_("200 OK"))
         assert_that(body, not_none())
@@ -41,12 +42,3 @@ class GithubAdapterTest(unittest.TestCase):
 
         assert_that(stub, is_(not_none()))
         assert_that(stub, is_("iamalive"))
-
-    def test_authorized_root_request_after_login(self):
-        githubAdapter = GithubAdapter()
-        githubAdapter.login(personal_acess_token=self.__personal_access_token)
-        headers, body = githubAdapter.requestApi("/user")
-
-        assert_that(headers["Status"], is_("200 OK"))
-        assert_that(body, not_none())
-        assert_that(body, has_entries())
