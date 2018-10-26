@@ -15,7 +15,7 @@ class GithubAdapterTest(unittest.TestCase):
         headers, body = githubAdapter.requestApi('/')
 
         assert_that(headers, not_none())
-        assert_that(headers["Status"], is_('200 OK'))
+        assert_that(headers["Status"], is_(any_of('200 OK', '403 Forbidden')))
         assert_that(body, not_none())
         assert_that(body, has_entries())
 
@@ -24,7 +24,7 @@ class GithubAdapterTest(unittest.TestCase):
         headers, body = githubAdapter.requestApi('/user')
 
         assert_that(headers, not_none())
-        assert_that(headers["Status"], is_('401 Unauthorized'))
+        assert_that(headers["Status"], is_(any_of('401 Unauthorized', '403 Forbidden')))
         assert_that(body, not_none())
         assert_that(body, has_entries())
 
