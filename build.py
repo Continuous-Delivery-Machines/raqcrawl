@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from pybuilder.core import init, use_plugin, Author, Project
+from pybuilder.core import init, use_plugin, Author, Project, task
 
 
 def current_git_version_tag():
@@ -45,3 +45,7 @@ def coverages(project: Project):
     project.set_property('coverage_threshold_warn', 100)
     project.set_property('coverage_branch_threshold_warn', 100)
     project.set_property('coverage_branch_partial_threshold_warn', 100)
+
+
+def print_name():
+    print(name)

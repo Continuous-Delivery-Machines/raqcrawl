@@ -1,0 +1,30 @@
+version: 0.2
+
+phases:
+
+  install:
+    commands:
+      - pip install pybuilder
+    finally:
+      - echo "Installed pip packages"
+      - pip list
+  pre_build:
+    commands:
+      - export GIT_DESCRIBE=$(git describe)
+      - python -c "import build; build.print_name()"
+      - export PROJECT_NAME=$(python -c "import build; build.print_name()")
+  build:
+    commands:
+      - pyb -v clean install_dependencies run_unit_tests package
+  post_build:
+    commands:
+      - find target/
+    finally:
+      - printenv
+artifacts:
+  files:
+    - ./**/*
+  name: $PROJECT_NAME-$GIT_DESCRIBE
+  base-directory: target/dist/$PROJECT_NAME-$GIT_DESCRIBE
+  discard-paths: no
+

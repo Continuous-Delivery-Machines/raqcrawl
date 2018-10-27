@@ -2,9 +2,11 @@ language: python
 python:
 - '3.6'
 install:
-- pip install pybuilder
+  - exit 1
+  - pip install pybuilder
 script:
-- pyb -v clean install_dependencies run_unit_tests run_integration_tests
+  - exit 1
+  - pyb -v clean install_dependencies run_unit_tests run_integration_tests
 env:
   global:
   - secure: UwqFgiUE1JPl6/alMPsFtxTY+lhmv6t6bnLn5fMhn/nkq/5XfVMY0lG0TfHSbamiBhWAFxCkV9q4/LL3NpNoEYQrTpeE4T6u+t/GYxo+88gORhNipMBQZCJzpRf9cvqpLUs0J+yAFUgwCyl/saAh6diuCrr3h6EuWwXhS8YkmdzxUvVTIBDUq0GG9Bd/NfX6ozBCbTBbyk0SHbGTf4e67Tu9rMsa7eRCaHSvQZvkx+PihZspe4KKheLcIssrCWUYgHYoqJrIAFXmtz+Tl8ycsrfApYWo5Em8PkKQ7HL5PHXjLqLiICo9Y9Zobu7TZw+lOkgIw6BPREXs4jqI6M1JKyb6ookjH7gCGqpXhoFDpnIwfjyzQG6vS65Dl0tQoO7bUJqaE67mB13I8kn6nID2MCbYBcSxKrqrg7VqdT/9xhWRQrVleSbmU3l4i6f7gIZdIF5mXDHHJ4Wgo70BkKnFDPbgBe6cUY/rae4nxKB4T6xDj7nM0hwPjVfiQd8uSvtSPhvj3lV4LxzUdJYUOGmxpIs/s/P7VRFC8kmkptTi8waEUkLfjJnAB2PS4+lpjeCOLSI8F2uX2ZUnWcdCHt0PdqsM3BgwOs4zSOv0IHucPryG+LmuN0evtbfsn2C68GH7yqC4V1kvZN0X5zajoGa2yH0tAtRO2L0lP8cp349GHRM=

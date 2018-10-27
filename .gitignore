@@ -1,5 +1,7 @@
 .idea/
 venv/
+local.env
+artifacts/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
