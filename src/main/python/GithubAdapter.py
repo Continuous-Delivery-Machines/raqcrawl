@@ -9,11 +9,11 @@ class GithubAdapter:
         self.__session = Session()
         pass
 
-    def requestApi(self, path="/") -> Tuple[MutableMapping, Mapping]:
+    def requestApi(self, path="/") -> Tuple[Mapping, MutableMapping]:
         """Sends a get request against GitHub's API against the specified endpoint.
         Requires leading slash [/]."""
         response = self.__session.get("https://api.github.com" + path)
-        return response.headers, loads(response.text)
+        return loads(response.text), response.headers
 
     def set_credentials(self, personal_acess_token: str) -> None:
         """Sets headers permanently, according to the given token, to identify itself to the GitHub API."""
