@@ -1,7 +1,7 @@
+import os
 import unittest
 from hamcrest import *
-from GithubAdapter import GithubAdapter
-import os
+from raqcrawl.GithubAdapter import GithubAdapter
 from matchers.TimeMatchers import within_an_hour
 
 FORBIDDEN = '403 Forbidden'
