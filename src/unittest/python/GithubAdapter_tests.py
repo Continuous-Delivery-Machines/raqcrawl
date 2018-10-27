@@ -2,6 +2,7 @@ import unittest
 from hamcrest import *
 from GithubAdapter import GithubAdapter
 import os
+from matchers.TimeMatchers import within_an_hour
 
 FORBIDDEN = '403 Forbidden'
 OK = '200 OK'
@@ -74,3 +75,12 @@ class GithubAdapterTest(unittest.TestCase):
         assert_that(rate_no_cred_after_requ, is_(not_none()))
         assert_that(rate_with_cred_after_requ, is_(not_none()))
         assert_that(rate_with_cred_after_requ, is_(not_(rate_no_cred_after_requ)))
+
+    def test_rate_reset_timer_after_request(self):
+        githubAdapter = GithubAdapter()
+        githubAdapter.requestApi('/')
+        rate_no_cred_after_requ = githubAdapter.rateResetTime
+
+        assert_that(rate_no_cred_after_requ, is_(not_none()))
+        assert_that(rate_no_cred_after_requ, is_(within_an_hour()))
+
