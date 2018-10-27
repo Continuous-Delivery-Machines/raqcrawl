@@ -17,7 +17,7 @@ class GithubSession:
         self.__session = Session()
 
     @property
-    def rate(self):
+    def rate(self) -> int:
         """Maximum rate of requests this GithubAdapter is able to
         send with its current configuration.
 
@@ -25,7 +25,7 @@ class GithubSession:
         return self.__rate
 
     @property
-    def rate_reset_time(self):
+    def rate_reset_time(self) -> datetime:
         """Represents to maximum rate of requests this GithubAdapter is able to
         send with its current configuration.
 

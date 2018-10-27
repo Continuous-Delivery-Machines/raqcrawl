@@ -1,8 +1,10 @@
-from pybuilder.core import init, use_plugin, Author, Project
-import subprocess
 import os
+import subprocess
 
-def currentGitVersionTag():
+from pybuilder.core import init, use_plugin, Author, Project
+
+
+def current_git_version_tag():
     if os.environ.get("TRAVIS") == "true":
         return "0.0.TRAVIS0"
     exit_core, s = subprocess.getstatusoutput("git describe")
@@ -26,13 +28,20 @@ name = 'raqcrawler'
 license = 'Apache License, Version 2.0'
 summary = 'Crawler for the R.A.Q. project.'
 url = 'http://www.whatthecommit.com'
-version = currentGitVersionTag()
+version = current_git_version_tag()
 
 default_task = "run_unit_tests"
 
 
 @init
-def initialize(project: Project):
-    project.build_depends_on('mockito')
-    project.build_depends_on('PyHamcrest')
-    project.depends_on('requests')
+def dependencies(project: Project):
+    project.depends_on_requirements('requirements.txt')
+    project.build_depends_on_requirements('requirements-dev.txt')
+
+
+@init
+def coverages(project: Project):
+    project.set_property('coverage_break_build', True)
+    project.set_property('coverage_threshold_warn', 100)
+    project.set_property('coverage_branch_threshold_warn', 100)
+    project.set_property('coverage_branch_partial_threshold_warn', 100)

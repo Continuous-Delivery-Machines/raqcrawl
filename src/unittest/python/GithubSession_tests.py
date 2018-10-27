@@ -82,7 +82,7 @@ class GithubSessionTest(unittest.TestCase):
     def test_rate_reset_timer_after_request(self):
         github_session = GithubSession()
         github_session.request_api('/')
-        rate_no_cred_after_req = github_session.rate_reset_time
+        rate_reset_time_no_cred_after_req = github_session.rate_reset_time
 
-        assert_that(rate_no_cred_after_req, is_(not_none()))
-        assert_that(rate_no_cred_after_req, is_(within_an_hour()))
+        assert_that(rate_reset_time_no_cred_after_req, is_(not_none()))
+        assert_that(rate_reset_time_no_cred_after_req, is_(within_an_hour()))

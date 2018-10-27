@@ -14,12 +14,10 @@ class StubsTests(unittest.TestCase):
         assert_that(calling(gs_stub.request_api), raises(BadStubUsageException))
         assert_that(calling(gs_stub.set_credentials).with_args("Something"), raises(BadStubUsageException))
         try:
-            x = gs_stub.rate
-            assert_that(x, should_have_caused_an_exception())
+            assert_that(gs_stub.rate, should_have_caused_an_exception())
         except BadStubUsageException:
             pass
         try:
-            x = gs_stub.rate_reset_time
-            assert_that(x, should_have_caused_an_exception())
+            assert_that(gs_stub.rate_reset_time, should_have_caused_an_exception())
         except BadStubUsageException:
             pass
