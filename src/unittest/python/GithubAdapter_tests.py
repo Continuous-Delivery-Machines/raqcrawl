@@ -53,3 +53,12 @@ class GithubAdapterTest(unittest.TestCase):
         assert_that(self.__env_stub, is_(not_none()))
         assert_that(self.__env_stub, is_("iamalive"))
 
+    def test_rate_tracker_decrements(self):
+        githubAdapter = GithubAdapter()
+        githubAdapter.set_credentials(personal_acess_token=self.__personal_access_token)
+        githubAdapter.requestApi('/')
+        rate_before = githubAdapter.rate
+        githubAdapter.requestApi('/')
+        rate_after = githubAdapter.rate
+
+        assert_that(rate_after, is_(less_than(rate_before)))
