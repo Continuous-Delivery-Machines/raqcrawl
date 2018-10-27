@@ -1,5 +1,6 @@
-from hamcrest.core.base_matcher import BaseMatcher
 from datetime import datetime, timedelta
+
+from hamcrest.core.base_matcher import BaseMatcher
 
 
 class WithinDatetimeMatcher(BaseMatcher):
@@ -17,5 +18,5 @@ class WithinDatetimeMatcher(BaseMatcher):
 
 def within_an_hour():
     low = datetime.utcnow() - timedelta(seconds=10)
-    up  = datetime.utcnow() + timedelta(hours= 1, seconds=10)
+    up = datetime.utcnow() + timedelta(hours=1, seconds=10)
     return WithinDatetimeMatcher(low, up)

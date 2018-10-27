@@ -1,17 +1,19 @@
-from requests import Session
+from datetime import datetime
 from json import loads
 from typing import MutableMapping, Mapping, Tuple
-from datetime import datetime
+
+from requests import Session
+
+RATE_REMAINING = 'X-RateLimit-Remaining'
+RATE_LIMIT = 'X-RateLimit-Limit'
+RATE_RESET = 'X-RateLimit-Reset'
 
 
-RATE_REMAINING='X-RateLimit-Remaining'
-RATE_LIMIT='X-RateLimit-Limit'
-RATE_RESET='X-RateLimit-Reset'
 class GithubAdapter:
 
     def __init__(self):
         self.__rate = None
-        self.__rateResetTime = None
+        self.__rater_reset_time = None
         self.__session = Session()
 
     @property
@@ -23,14 +25,14 @@ class GithubAdapter:
         return self.__rate
 
     @property
-    def rateResetTime(self):
+    def rate_reset_time(self):
         """Represents to maximum rate of requests this GithubAdapter is able to
         send with its current configuration.
 
         Is None if the the rate is not definitely known."""
-        return self.__rateResetTime
+        return self.__rater_reset_time
 
-    def requestApi(self, path="/") -> Tuple[Mapping, MutableMapping]:
+    def request_api(self, path="/") -> Tuple[Mapping, MutableMapping]:
         """Sends a get request against GitHub's API against the specified endpoint.
         Requires leading slash [/]."""
 
@@ -39,14 +41,13 @@ class GithubAdapter:
         self.__rate = int(headers[RATE_REMAINING])
 
         """The X-RateLimit-Reset header shows UTC [non-milli]seconds, which is exactly what datetime wants."""
-        self.__rateResetTime = datetime.utcfromtimestamp(int(headers[RATE_RESET]))
+        self.__rater_reset_time = datetime.utcfromtimestamp(int(headers[RATE_RESET]))
 
         return json_body, headers
 
-    def set_credentials(self, personal_acess_token: str) -> None:
+    def set_credentials(self, personal_access_token: str) -> None:
         """Sets headers permanently, according to the given token, to identify itself to the GitHub API."""
-        s = "token {0}".format(personal_acess_token)
+        s = "token {0}".format(personal_access_token)
         self.__session.headers.update({"Authorization": s})
         self.__rate = None
-        self.__rateResetTime = None
-
+        self.__rater_reset_time = None
