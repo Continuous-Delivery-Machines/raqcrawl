@@ -9,7 +9,7 @@ RATE_LIMIT = 'X-RateLimit-Limit'
 RATE_RESET = 'X-RateLimit-Reset'
 
 
-class GithubAdapter:
+class GithubSession:
 
     def __init__(self):
         self.__rate = None

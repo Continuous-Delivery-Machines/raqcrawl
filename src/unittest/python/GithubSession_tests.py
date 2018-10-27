@@ -3,7 +3,7 @@ import unittest
 
 from hamcrest import *
 
-from GithubAdapter import GithubAdapter
+from GithubSession import GithubSession
 from matchers.TimeMatchers import within_an_hour
 
 OK = '200 OK'
@@ -14,7 +14,7 @@ RATE_LIMIT = 'X-RateLimit-Limit'
 RATE_REMAINING = 'X-RateLimit-Remaining'
 
 
-class GithubAdapterTest(unittest.TestCase):
+class GithubSessionTest(unittest.TestCase):
 
     def setUp(self):
         self.__username = os.environ.get('RAQ_CRAWLER_TEST_USERNAME')
@@ -22,8 +22,8 @@ class GithubAdapterTest(unittest.TestCase):
         self.__env_stub = os.environ.get('RAQ_CRAWLER_TEST_STUB')
 
     def test_request_github_api_root(self):
-        github_adapter = GithubAdapter()
-        body, headers = github_adapter.request_api('/')
+        github_session = GithubSession()
+        body, headers = github_session.request_api('/')
 
         assert_that(headers, not_none())
         assert_that(headers["Status"], is_(any_of(OK, FORBIDDEN)))
@@ -33,8 +33,8 @@ class GithubAdapterTest(unittest.TestCase):
             assert_that(int(headers[RATE_REMAINING]), is_(0))
 
     def test_request_current_sessions_user_unauthorized(self):
-        github_adapter = GithubAdapter()
-        body, headers = github_adapter.request_api('/user')
+        github_session = GithubSession()
+        body, headers = github_session.request_api('/user')
 
         assert_that(headers, not_none())
         assert_that(headers["Status"], is_(any_of(UNAUTHORIZED, FORBIDDEN)))
@@ -44,9 +44,9 @@ class GithubAdapterTest(unittest.TestCase):
             assert_that(int(headers[RATE_REMAINING]), is_(0))
 
     def test_authorization_via_user_request(self):
-        github_adapter = GithubAdapter()
-        github_adapter.set_credentials(personal_access_token=self.__personal_access_token)
-        body, headers = github_adapter.request_api('/user')
+        github_session = GithubSession()
+        github_session.set_credentials(personal_access_token=self.__personal_access_token)
+        body, headers = github_session.request_api('/user')
 
         assert_that(headers["Status"], is_("200 OK"))
         assert_that(int(headers[RATE_REMAINING]), is_(greater_than(0)))
@@ -58,31 +58,31 @@ class GithubAdapterTest(unittest.TestCase):
         assert_that(self.__env_stub, is_("iamalive"))
 
     def test_rate_tracker_decrements(self):
-        github_adapter = GithubAdapter()
-        github_adapter.set_credentials(personal_access_token=self.__personal_access_token)
-        github_adapter.request_api('/')
-        rate_before = github_adapter.rate
-        github_adapter.request_api('/')
-        rate_after = github_adapter.rate
+        github_session = GithubSession()
+        github_session.set_credentials(personal_access_token=self.__personal_access_token)
+        github_session.request_api('/')
+        rate_before = github_session.rate
+        github_session.request_api('/')
+        rate_after = github_session.rate
 
         assert_that(rate_after, is_(less_than(rate_before)))
 
     def test_rate_tracker_update_on_credential_change(self):
-        github_adapter = GithubAdapter()
-        github_adapter.request_api('/')
-        rate_no_cred_after_req = github_adapter.rate
-        github_adapter.set_credentials(personal_access_token=self.__personal_access_token)
-        github_adapter.request_api('/')
-        rate_with_cred_after_req = github_adapter.rate
+        github_session = GithubSession()
+        github_session.request_api('/')
+        rate_no_cred_after_req = github_session.rate
+        github_session.set_credentials(personal_access_token=self.__personal_access_token)
+        github_session.request_api('/')
+        rate_with_cred_after_req = github_session.rate
 
         assert_that(rate_no_cred_after_req, is_(not_none()))
         assert_that(rate_with_cred_after_req, is_(not_none()))
         assert_that(rate_with_cred_after_req, is_(not_(rate_no_cred_after_req)))
 
     def test_rate_reset_timer_after_request(self):
-        github_adapter = GithubAdapter()
-        github_adapter.request_api('/')
-        rate_no_cred_after_req = github_adapter.rate_reset_time
+        github_session = GithubSession()
+        github_session.request_api('/')
+        rate_no_cred_after_req = github_session.rate_reset_time
 
         assert_that(rate_no_cred_after_req, is_(not_none()))
         assert_that(rate_no_cred_after_req, is_(within_an_hour()))
