@@ -62,3 +62,15 @@ class GithubAdapterTest(unittest.TestCase):
         rate_after = githubAdapter.rate
 
         assert_that(rate_after, is_(less_than(rate_before)))
+
+    def test_rate_tracker_update_on_credential_change(self):
+        githubAdapter = GithubAdapter()
+        githubAdapter.requestApi('/')
+        rate_no_cred_after_requ = githubAdapter.rate
+        githubAdapter.set_credentials(personal_acess_token=self.__personal_access_token)
+        githubAdapter.requestApi('/')
+        rate_with_cred_after_requ = githubAdapter.rate
+
+        assert_that(rate_no_cred_after_requ, is_(not_none()))
+        assert_that(rate_with_cred_after_requ, is_(not_none()))
+        assert_that(rate_with_cred_after_requ, is_(not_(rate_no_cred_after_requ)))
