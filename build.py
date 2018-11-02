@@ -5,8 +5,8 @@ from pybuilder.core import init, use_plugin, Author, Project, task
 
 
 def current_git_version_tag():
-    if os.environ.get("TRAVIS") == "true":
-        return "0.0.TRAVIS0"
+    if os.environ.get("CODEBUILD_RESOLVED_SOURCE_VERSION") is not None:
+        return "0.0.CB" + os.environ.get("CODEBUILD_RESOLVED_SOURCE_VERSION")[0:7]
     exit_core, s = subprocess.getstatusoutput("git describe")
     if exit_core != 0:
         raise RuntimeError("Unable to get git version")
