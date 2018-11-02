@@ -17,7 +17,7 @@ phases:
         elif [ -z ${CODEBUILD_RESOLVED_SOURCE_VERSION+x} ]; then
           exit 42
         else
-          export GIT_DESCRIBE=0.0.dev0-g${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}
+          export GIT_DESCRIBE=0.0.dev0-g${CODEBUILD_RESOLVED_SOURCE_VERSION}
           echo "Version codebuilded"
         fi
       - export PROJECT_NAME=$(python -c "import build; build.print_name()")
