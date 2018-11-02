@@ -12,13 +12,13 @@ phases:
     commands:
       - |
         if [ -d ".git" ]; then
-          export GIT_DESCRIBE=$(git describe)
+          export GIT_DESCRIBE=A
           echo "Version gitdescribed"
         elif [ -z ${CODEBUILD_RESOLVED_SOURCE_VERSION+x} ]; then
           export GIT_DESCRIBE="unknown"
           echo "Version unknown"
         else
-          export GIT_DESCRIBE=v0.0.dev0-g${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}
+          export GIT_DESCRIBE=B
           echo "Version codebuilded"
         fi
       - export PROJECT_NAME=$(python -c "import build; build.print_name()")
