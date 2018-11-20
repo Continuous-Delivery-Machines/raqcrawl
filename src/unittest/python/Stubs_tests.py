@@ -2,22 +2,16 @@ import unittest
 
 from hamcrest import *
 
-from matchers.MyMatchers import should_have_caused_an_exception
-from stubs.GithubSessionStubs import GithubSessionBaseStub
-from stubs.StubExceptions import BadStubUsageException
+from RepositoryTask import RepositoryTask
+from TaskSupplier import TaskSupplier
+from stubs.TaskSupplierStubs import TaskSupplierStub
 
 
 class StubsTests(unittest.TestCase):
 
-    def test_github_session_base_stub_failures(self):
-        gs_stub = GithubSessionBaseStub()
-        assert_that(calling(gs_stub.request_api), raises(BadStubUsageException))
-        assert_that(calling(gs_stub.set_credentials).with_args("Something"), raises(BadStubUsageException))
-        try:
-            assert_that(gs_stub.rate, should_have_caused_an_exception())
-        except BadStubUsageException:
-            pass
-        try:
-            assert_that(gs_stub.rate_reset_time, should_have_caused_an_exception())
-        except BadStubUsageException:
-            pass
+    def test_buildability_of_task_supplier_stub(self):
+        task = RepositoryTask("a", ["a"])
+        task_supplier_stub = TaskSupplierStub(task)
+        assert_that(isinstance(task_supplier_stub, TaskSupplier), is_(True))
+        assert_that(task_supplier_stub.hasNextRepositoryTask(), is_(True))
+        assert_that(task_supplier_stub.popNextRepositoryTask(), is_(task))
