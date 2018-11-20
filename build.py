@@ -20,7 +20,7 @@ use_plugin("python.install_dependencies")
 use_plugin("python.distutils")
 use_plugin('python.pycharm')
 
-description = """
+description = """   
 <Insert descriptive description here>
 """
 authors = [Author('Marvin Lukas Wenzel', 'wenzel@th-brandenburg.de', ["Backend Guru"])]
