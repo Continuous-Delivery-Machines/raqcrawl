@@ -1,3 +1,4 @@
+"""Encasulation of Github-API and session management."""
 from datetime import datetime
 from json import loads
 from typing import MutableMapping, Mapping, Tuple
@@ -10,6 +11,8 @@ RATE_RESET = 'X-RateLimit-Reset'
 
 
 class GithubSession:
+    """Encapsulates Session on GitHub API for easy resource tracking and
+    easier navigation by reducing redundancy."""
 
     def __init__(self):
         self.__rate = None
@@ -40,14 +43,16 @@ class GithubSession:
         json_body, headers = loads(response.text), response.headers
         self.__rate = int(headers[RATE_REMAINING])
 
-        """The X-RateLimit-Reset header shows UTC [non-milli]seconds, which is exactly what datetime wants."""
+        # The X-RateLimit-Reset header shows UTC [non-milli]seconds,
+        # which is exactly what datetime wants.
         self.__rater_reset_time = datetime.utcfromtimestamp(int(headers[RATE_RESET]))
 
         return json_body, headers
 
     def set_credentials(self, personal_access_token: str) -> None:
-        """Sets headers permanently, according to the given token, to identify itself to the GitHub API."""
-        s = "token {0}".format(personal_access_token)
-        self.__session.headers.update({"Authorization": s})
+        """Sets headers permanently, according to the given token,
+        to identify itself to the GitHub API."""
+        token_string = "token {0}".format(personal_access_token)
+        self.__session.headers.update({"Authorization": token_string})
         self.__rate = None
         self.__rater_reset_time = None

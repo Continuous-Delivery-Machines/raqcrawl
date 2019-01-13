@@ -3,7 +3,7 @@ import unittest
 
 from hamcrest import *
 
-from TaskExecutor import TaskExecutor
+from task_executor import TaskExecutor
 from matchers.FileMatchers import *
 
 

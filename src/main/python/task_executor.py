@@ -1,6 +1,6 @@
 import os
 
-from GithubSession import GithubSession
+from github_session import GithubSession
 
 
 class TaskExecutor:

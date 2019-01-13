@@ -1,14 +1,14 @@
 from abc import ABCMeta, abstractmethod
 
-import RepositoryTask
+import repository_task
 
 
 class TaskSupplier(metaclass=ABCMeta):
 
     @abstractmethod
-    def popNextRepositoryTask(self) -> RepositoryTask:
+    def pop_next_repository_task(self) -> repository_task:
         pass
 
     @abstractmethod
-    def hasNextRepositoryTask(self) -> bool:
+    def has_next_repository_task(self) -> bool:
         pass

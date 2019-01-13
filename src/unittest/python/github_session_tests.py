@@ -3,7 +3,7 @@ import unittest
 
 from hamcrest import *
 
-from GithubSession import GithubSession
+from github_session import GithubSession
 from matchers.TimeMatchers import within_an_hour
 
 OK = '200 OK'
