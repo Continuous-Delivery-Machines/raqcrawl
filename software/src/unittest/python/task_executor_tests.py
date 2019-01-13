@@ -21,7 +21,7 @@ class TaskExecutorTests(unittest.TestCase):
         assert_that(calling(TaskExecutor).with_args(None, 'asd$%&asd'), raises(IOError))
 
     def test_task_executor_init_restrictions_on_not_existing_path(self):
-        assert_that(calling(TaskExecutor).with_args(None, '/x/x/x'), raises(IOError))
+        assert_that(calling(TaskExecutor).with_args(None, '/x.sh/x.sh/x.sh'), raises(IOError))
 
     def test_task_executor_init_restrictions_on_not_file_path(self):
         temp = tempfile.NamedTemporaryFile()

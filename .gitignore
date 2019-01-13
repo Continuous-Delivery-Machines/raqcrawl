@@ -3,6 +3,8 @@ venv/
 local.env
 artifacts/
 .mypy_cache/
+Docker/**/resources/
+temp_makemyday/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

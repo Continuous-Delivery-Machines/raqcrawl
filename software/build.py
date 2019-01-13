@@ -36,7 +36,7 @@ default_task = "run_unit_tests"
 @init
 def dependencies(project: Project):
     project.depends_on_requirements('requirements.txt')
-    project.build_depends_on_requirements('requirements-dev.txt')
+    project.build_depends_on_requirements('requirements-test.txt')
 
 
 @init
