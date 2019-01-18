@@ -37,7 +37,7 @@ class GithubSession:
 
     def request_api(self, path="/") -> Tuple[Mapping, MutableMapping]:
         """Sends a get request against GitHub's API against the specified endpoint."""
-        if path[0] is not '/':
+        if path[0] == '/':
             path = '/' + path
 
         response = self.__session.get("https://api.github.com" + path)

@@ -37,6 +37,4 @@ class SqsMessageQueue:
 
 class NoMessagesAfterLongPollingAvailableException(Exception):
     """Exception throws when no Messages are received after a Long Polling."""
-
-    def __init__(self, arg) -> None:
-        super().__init__(arg)
+    pass
