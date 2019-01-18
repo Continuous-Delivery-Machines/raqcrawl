@@ -3,7 +3,7 @@
 import json
 
 import boto3
-from hashlib import md5
+
 
 class SqsMessageQueue:
     """Encapsulates reading boto3.SQS.Queue calls. """
@@ -45,7 +45,6 @@ class SqsMessageQueue:
         if "MessageId" not in response or "MD5OfMessageBody" not in response:
             raise Exception("")
         return response
-
 
 
 class NoMessagesAfterLongPollingAvailableException(Exception):
