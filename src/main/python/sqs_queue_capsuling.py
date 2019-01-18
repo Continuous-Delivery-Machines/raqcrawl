@@ -6,11 +6,12 @@ import boto3
 class SqsMessageQueue:
     """Encapsulates reading boto3.SQS.Queue calls. """
 
-    def __init__(self, botosession: boto3.session.Session, queue_address: str, msg_visibility_timeout: int = 600):
+    def __init__(self, botosession: boto3.session.Session, queue_address: str, msg_visibility_timeout: int = 600, wait_time: int = 20):
         self._session = botosession
         self._queue_address = queue_address
         self._msq_queue = self._session.resource('sqs').Queue(self._queue_address)
         self._vis_timeout = msg_visibility_timeout
+        self._wait_time = wait_time
 
     def pop_next_message(self):
         """Receives one message with all attributes available. Uses Long Polling
@@ -21,7 +22,7 @@ class SqsMessageQueue:
             MessageAttributeNames=['All'],
             MaxNumberOfMessages=1,
             VisibilityTimeout=self._vis_timeout,
-            WaitTimeSeconds=20,
+            WaitTimeSeconds=self._wait_time,
         )
         if not messages:
             raise NoMessagesAfterLongPollingAvailableException("No Messages receivable from Queue")

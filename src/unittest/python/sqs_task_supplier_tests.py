@@ -55,11 +55,14 @@ class SqsTaskSupplierTests(unittest.TestCase):
     def tearDownClass(cls):
         """If a way is found to close the Socket associated with one of them,
         put it here."""
+        print("tearDownClass")
         del cls.msg_queue
         del cls.boto_session
+        print("tearDownClass end")
 
     def tearDown(self):
         """Delete all contents of the queue for the next test."""
+        print("tearDown")
         msgs = self.get_up_to_ten_messages()
         while msgs:
             del_entries = map(lambda msg: {'Id': msg.message_id, 'ReceiptHandle': msg.receipt_handle}, msgs)
@@ -67,6 +70,7 @@ class SqsTaskSupplierTests(unittest.TestCase):
             if "Failed" in del_dict:
                 raise Exception('Failed to clean messages during tearDown {}'.format(del_entries))
             msgs = self.get_up_to_ten_messages()
+        print("tearDown end")
 
     def get_up_to_ten_messages(self):
         """Returns as many messages as possible with all their data available"""
@@ -75,20 +79,22 @@ class SqsTaskSupplierTests(unittest.TestCase):
             MessageAttributeNames=['All'],
             MaxNumberOfMessages=10,
             VisibilityTimeout=600,
-            WaitTimeSeconds=20,
+            WaitTimeSeconds=1,
         )
 
     def test_pop_on_empty_queue(self):
         """Tests behaviour of supplier on an empty Msg Queue"""
         supplier = SqsMessageQueue(botosession=self.boto_session,
-                                   queue_address=self.queue_address)
+                                   queue_address=self.queue_address,
+                                   wait_time=1)
 
         assert_that(calling(supplier.pop_next_message), raises(NoMessagesAfterLongPollingAvailableException))
 
     def test_pop_single_message(self):
         """Tests behaviour on Msg Queue with one msg in it."""
         supplier = SqsMessageQueue(botosession=self.boto_session,
-                                   queue_address=self.queue_address)
+                                   queue_address=self.queue_address,
+                                   wait_time=1)
 
         orig_data_dict = {'task': 'test', 'values': {'a': 1, 'c': "what"}}
         msg = json.dumps(orig_data_dict)
