@@ -23,7 +23,7 @@ class GithubSessionTest(unittest.TestCase):
 
     def test_request_github_api_root(self):
         github_session = GithubSession()
-        body, headers = github_session.request_api('/')
+        _, headers = github_session.request_api('/')
 
         assert_that(headers, not_none())
         assert_that(headers["Status"], is_(any_of(OK, FORBIDDEN)))
@@ -34,7 +34,7 @@ class GithubSessionTest(unittest.TestCase):
 
     def test_request_current_sessions_user_unauthorized(self):
         github_session = GithubSession()
-        body, headers = github_session.request_api('/user')
+        _, headers = github_session.request_api('/user')
 
         assert_that(headers, not_none())
         assert_that(headers["Status"], is_(any_of(UNAUTHORIZED, FORBIDDEN)))
