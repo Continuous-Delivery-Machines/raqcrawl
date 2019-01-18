@@ -6,7 +6,7 @@ from time import sleep
 
 import boto3
 from botocore import exceptions
-from hamcrest import *
+from hamcrest import assert_that, calling, raises, is_not, is_
 
 from sqs_queue_capsuling import SqsMessageQueue, NoMessagesAfterLongPollingAvailableException
 
@@ -44,10 +44,11 @@ class SqsTaskSupplierTests(unittest.TestCase):
                 cls.msg_queue.purge()
                 print('Done... hopefully')
                 break
-            except exceptions.ClientError as e:
+            except exceptions.ClientError as exception:
                 print('Waiting 6sec because of likely PurgeInProgress')
+                print(exception)
                 sleep(6)
-            if i is 10:
+            if i == 10:
                 raise Exception('Unsuccessful purge of MsgQueue')
 
     @classmethod
@@ -60,7 +61,7 @@ class SqsTaskSupplierTests(unittest.TestCase):
     def tearDown(self):
         """Delete all contents of the queue for the next test."""
         msgs = self.get_up_to_ten_messages()
-        while len(msgs) > 0:
+        while msgs:
             del_entries = map(lambda msg: {'Id': msg.message_id, 'ReceiptHandle': msg.receipt_handle}, msgs)
             del_dict = self.msg_queue.delete_messages(Entries=del_entries)
             if "Failed" in del_dict:
@@ -83,7 +84,6 @@ class SqsTaskSupplierTests(unittest.TestCase):
                                    queue_address=self.queue_address)
 
         assert_that(calling(supplier.pop_next_message), raises(NoMessagesAfterLongPollingAvailableException))
-        pass
 
     def test_pop_single_message(self):
         """Tests behaviour on Msg Queue with one msg in it."""
@@ -101,4 +101,3 @@ class SqsTaskSupplierTests(unittest.TestCase):
 
         assert_that(pop, is_not(None))
         assert_that(received_body_dict, is_(orig_data_dict))
-        pass

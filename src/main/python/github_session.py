@@ -19,6 +19,10 @@ class GithubSession:
         self.__rater_reset_time = None
         self.__session = Session()
 
+    def __del__(self):
+        self.__session.close()
+        del self.__session
+
     @property
     def rate(self) -> int:
         """Maximum rate of requests this GithubAdapter is able to
@@ -37,7 +41,7 @@ class GithubSession:
 
     def request_api(self, path="/") -> Tuple[Mapping, MutableMapping]:
         """Sends a get request against GitHub's API against the specified endpoint."""
-        if path[0] == '/':
+        if path[0] != '/':
             path = '/' + path
 
         response = self.__session.get("https://api.github.com" + path)
