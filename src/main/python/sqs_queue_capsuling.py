@@ -6,7 +6,8 @@ import boto3
 class SqsMessageQueue:
     """Encapsulates reading boto3.SQS.Queue calls. """
 
-    def __init__(self, botosession: boto3.session.Session, queue_address: str, msg_visibility_timeout: int = 600, wait_time: int = 20):
+    def __init__(self, botosession: boto3.session.Session, queue_address: str,
+                 msg_visibility_timeout: int = 600, wait_time: int = 20):
         self._session = botosession
         self._queue_address = queue_address
         self._msq_queue = self._session.resource('sqs').Queue(self._queue_address)

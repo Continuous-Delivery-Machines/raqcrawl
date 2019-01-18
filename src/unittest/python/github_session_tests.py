@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from hamcrest import *
+from hamcrest import assert_that, not_none, any_of, is_, greater_than, has_entries, less_than, not_
 
 from github_session import GithubSession
 from matchers.TimeMatchers import within_an_hour
