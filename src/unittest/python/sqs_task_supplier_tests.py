@@ -6,7 +6,7 @@ from time import sleep
 
 import boto3
 from botocore import exceptions
-from hamcrest import assert_that, calling, raises, is_not, is_
+from hamcrest import assert_that, calling, raises, is_not, is_, has_key, not_
 
 from sqs_queue_capsuling import SqsMessageQueue, NoMessagesAfterLongPollingAvailableException
 
@@ -84,17 +84,17 @@ class SqsTaskSupplierTests(unittest.TestCase):
 
     def test_pop_on_empty_queue(self):
         """Tests behaviour of supplier on an empty Msg Queue"""
-        supplier = SqsMessageQueue(botosession=self.boto_session,
-                                   queue_address=self.queue_address,
-                                   wait_time=1)
+        queue = SqsMessageQueue(botosession=self.boto_session,
+                                queue_address=self.queue_address,
+                                wait_time=1)
 
-        assert_that(calling(supplier.pop_next_message), raises(NoMessagesAfterLongPollingAvailableException))
+        assert_that(calling(queue.pop_next_message), raises(NoMessagesAfterLongPollingAvailableException))
 
     def test_pop_single_message(self):
         """Tests behaviour on Msg Queue with one msg in it."""
-        supplier = SqsMessageQueue(botosession=self.boto_session,
-                                   queue_address=self.queue_address,
-                                   wait_time=1)
+        queue = SqsMessageQueue(botosession=self.boto_session,
+                                queue_address=self.queue_address,
+                                wait_time=1)
 
         orig_data_dict = {'task': 'test', 'values': {'a': 1, 'c': "what"}}
         msg = json.dumps(orig_data_dict)
@@ -102,8 +102,42 @@ class SqsTaskSupplierTests(unittest.TestCase):
             MessageBody=msg,
             DelaySeconds=0,
         )
-        pop = supplier.pop_next_message()
+        pop = queue.pop_next_message()
         received_body_dict = json.loads(pop.body)
 
         assert_that(pop, is_not(None))
         assert_that(received_body_dict, is_(orig_data_dict))
+
+    def test_write_single_message_no_attributes(self):
+        """Sends a message with body into the queue and receives it"""
+        queue = SqsMessageQueue(botosession=self.boto_session,
+                                queue_address=self.queue_address,
+                                wait_time=1)
+
+        data = {'a': 'A', 'langs': {'C': 1234, 'python': 8765}}
+        response = queue.write_message(message=data)
+        assert_that(response, has_key('MD5OfMessageBody'))
+        assert_that(response, not_(has_key('MD5OfMessageAttributes')))
+        assert_that(response, has_key('MessageId'))
+
+        received_msg = queue.pop_next_message()
+        received_dict = json.loads(received_msg.body)
+        assert_that(received_dict, is_(data))
+
+    def test_write_single_message_with_attributes(self):
+        """Sends a message with body into the queue and receives it"""
+        queue = SqsMessageQueue(botosession=self.boto_session,
+                                queue_address=self.queue_address,
+                                wait_time=1)
+
+        data = {'a': 'A', 'langs': {'C': 1234, 'python': 8765}}
+        attrs = {'key_name': {'StringValue': 'ma_val', 'DataType': 'String'}}
+        response = queue.write_message(message=data, message_attributes=attrs)
+        assert_that(response, has_key('MD5OfMessageBody'))
+        assert_that(response, has_key('MD5OfMessageAttributes'))
+        assert_that(response, has_key('MessageId'))
+
+        received_msg = queue.pop_next_message()
+        received_dict = json.loads(received_msg.body)
+        assert_that(received_dict, is_(data))
+        assert_that(received_msg.message_attributes, is_(attrs))

@@ -1,7 +1,9 @@
 """Encapsulate SQS.Queue calls."""
 
-import boto3
+import json
 
+import boto3
+from hashlib import md5
 
 class SqsMessageQueue:
     """Encapsulates reading boto3.SQS.Queue calls. """
@@ -32,9 +34,18 @@ class SqsMessageQueue:
         else:
             raise Exception("Received more Messages than intended")
 
-    def write_message(self, message: dict):
+    def write_message(self, message: dict, message_attributes: dict = {}):
         """Writes the provided dict JSON-encoded into the Msg Queue."""
-        pass
+        msg_body = json.dumps(message)
+        response = self._msq_queue.send_message(
+            MessageBody=msg_body,
+            DelaySeconds=0,
+            MessageAttributes=message_attributes
+        )
+        if "MessageId" not in response or "MD5OfMessageBody" not in response:
+            raise Exception("")
+        return response
+
 
 
 class NoMessagesAfterLongPollingAvailableException(Exception):
