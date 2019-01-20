@@ -1,7 +1,7 @@
 """Runs the Crawler with configuration given by the environment."""
 import os
 import sys
-
+import tempfile
 import boto3
 
 from github_session import GithubSession
@@ -33,6 +33,9 @@ def run_crawler_with_config(config):
                                 wait_time=20,
                                 queue_address=config['msg_queue_address'],
                                 msg_visibility_timeout=600)
+
+    working_temp_dir = tempfile.TemporaryDirectory(prefix='raq_crawler_')
+    working_path = working_temp_dir.name
 
 
 if __name__ == '__main__':
