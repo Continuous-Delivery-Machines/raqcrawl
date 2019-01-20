@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import boto3
+import json
 
 from github_session import GithubSession
 from sqs_queue_capsuling import SqsMessageQueue
@@ -23,19 +24,29 @@ def read_config_from_environment(stage: str = "DEV"):
 def run_crawler_with_config(config):
     """Instantiates connections and instances, ties them together and runs the crawler."""
     github_session = GithubSession()
-    github_session.set_credentials(personal_access_token=config['github_access_token'])
+    github_session.set_credentials(personal_access_token=config['github_token'])
 
-    boto3_session = boto3.session.Session(aws_access_key_id=config['aws_key'],
+    boto3_session = boto3.session.Session(aws_access_key_id=config['aws_id'],
                                           aws_secret_access_key=config['aws_secret'],
                                           region_name=config['region_name'])
 
     msg_queue = SqsMessageQueue(botosession=boto3_session,
                                 wait_time=20,
                                 queue_address=config['msg_queue_address'],
-                                msg_visibility_timeout=600)
+                                msg_visibility_timeout=30)
 
     working_temp_dir = tempfile.TemporaryDirectory(prefix='raq_crawler_')
     working_path = working_temp_dir.name
+
+    should_run = True
+
+    while should_run:
+        print('Go')
+        message = msg_queue.pop_next_message()
+        msg_dict = json.loads(message.body)
+        print(msg_dict)
+        print(message.attributes)
+
 
 
 if __name__ == '__main__':

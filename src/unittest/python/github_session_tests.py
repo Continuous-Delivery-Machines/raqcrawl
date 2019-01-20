@@ -17,9 +17,8 @@ RATE_REMAINING = 'X-RateLimit-Remaining'
 class GithubSessionTest(unittest.TestCase):
 
     def setUp(self):
-        self.__username = os.environ.get('RAQ_CRAWLER_TEST_USERNAME')
-        self.__personal_access_token = os.environ.get('RAQ_CRAWLER_TEST_PAT')
-        self.__env_stub = os.environ.get('RAQ_CRAWLER_TEST_STUB')
+        self.__username = os.environ.get('RAQ_CRAWLER_TEST_GITHUB_USERNAME')
+        self.__personal_access_token = os.environ.get('RAQ_CRAWLER_TEST_GITHUB_TOKEN')
 
     def test_request_github_api_root(self):
         github_session = GithubSession()
@@ -52,10 +51,6 @@ class GithubSessionTest(unittest.TestCase):
         assert_that(int(headers[RATE_REMAINING]), is_(greater_than(0)))
         assert_that(body, has_entries())
         assert_that(body['login'], is_(self.__username))
-
-    def test_os_environs_exist(self):
-        assert_that(self.__env_stub, is_(not_none()))
-        assert_that(self.__env_stub, is_("iamalive"))
 
     def test_rate_tracker_decrements(self):
         github_session = GithubSession()

@@ -5,6 +5,13 @@ import json
 import boto3
 
 
+def dict_for_message(message):
+    body_d = json.loads(message.body)
+    message.body_dict = body_d
+    message.body_raw = message.body
+    return message
+
+
 class SqsMessageQueue:
     """Encapsulates reading boto3.SQS.Queue calls. """
 
@@ -30,7 +37,7 @@ class SqsMessageQueue:
         if not messages:
             raise NoMessagesAfterLongPollingAvailableException("No Messages receivable from Queue")
         elif len(messages) == 1:
-            return messages[0]
+            return dict_for_message(messages[0])
         else:
             raise Exception("Received more Messages than intended")
 

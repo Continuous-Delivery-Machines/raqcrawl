@@ -32,10 +32,12 @@ class SqsTaskSupplierTests(unittest.TestCase):
 
         cls.aws_id = os.environ.get('RAQ_CRAWLER_TEST_AWS_ID')
         cls.aws_secret = os.environ.get('RAQ_CRAWLER_TEST_AWS_SECRET')
-        cls.queue_address = os.environ.get("RAQ_CRAWLER_TEST_QUEUE")
+
+        cls.queue_address = os.environ.get("RAQ_CRAWLER_TEST_MSG_QUEUE_ADDRESS")
+        cls.aws_region = os.environ.get("RAQ_CRAWLER_DEV_REGION_NAME")
         cls.boto_session = boto3.session.Session(aws_access_key_id=cls.aws_id,
                                                  aws_secret_access_key=cls.aws_secret,
-                                                 region_name='us-east-1')
+                                                 region_name=cls.aws_region)
         cls.msg_queue = cls.boto_session.resource('sqs').Queue(cls.queue_address)
         cls.msg_queue.load()
         for i in range(1, 10):
@@ -55,10 +57,8 @@ class SqsTaskSupplierTests(unittest.TestCase):
     def tearDownClass(cls):
         """If a way is found to close the Socket associated with one of them,
         put it here."""
-        print("tearDownClass")
         del cls.msg_queue
         del cls.boto_session
-        print("tearDownClass end")
 
     def tearDown(self):
         """Delete all contents of the queue for the next test."""
