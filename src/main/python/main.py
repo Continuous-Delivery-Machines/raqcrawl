@@ -40,13 +40,16 @@ def run_crawler_with_config(config):
                                 queue_address=config['msg_queue_address'],
                                 msg_visibility_timeout=30)
 
-    working_temp_dir = tempfile.TemporaryDirectory(prefix='raq_crawler_')
+    working_temp_dir = tempfile.TemporaryDirectory(prefix='raq_crawler_{}'.format(STATS['RANDOM_ID']))
     working_path = working_temp_dir.name
 
     should_run = True
 
     while should_run:
         message = msg_queue.pop_next_message()
+        if github_session.rate is not None:
+            print('Current rate left: {}'.format(github_session.rate))
+            print('Resets at {}'.format(github_session.rate_reset_time.isoformat()))
         print('Received Msg')
         print(message.body_raw)
 
@@ -140,7 +143,7 @@ def handle_refill_task(github_session, message, msg_queue):
 if __name__ == '__main__':
     STATS = {
         'START_TIMESTAMP': datetime.datetime.utcnow().isoformat(),
-        'RANDOM_ID': ''.join(random.choices(string.ascii_uppercase + string.digits, k=100))
+        'RANDOM_ID': ''.join(random.choices(string.ascii_letters + string.digits, k=32))
     }
     print("START_TIMESTAMP: {}".format(STATS['START_TIMESTAMP']))
     print("RANDOM_ID: {}".format(STATS['RANDOM_ID']))
