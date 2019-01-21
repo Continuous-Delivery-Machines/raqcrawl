@@ -39,12 +39,18 @@ class GithubSession:
         Is None if the the rate is not definitely known."""
         return self.__rater_reset_time
 
-    def request_api(self, path="/") -> Tuple[Mapping, MutableMapping]:
+    def request_api(self, path="/") -> Tuple[Mapping, MutableMapping, str]:
         """Sends a get request against GitHub's API against the specified endpoint."""
         if path[0] != '/':
             path = '/' + path
 
-        response = self.__session.get("https://api.github.com" + path)
+        url = "https://api.github.com" + path
+
+        return self.request_url(url)
+
+    def request_url(self, url) -> Tuple[Mapping, MutableMapping, str]:
+        """Sends a get request against GitHub's API against the specified endpoint."""
+        response = self.__session.get(url)
         json_body, headers = loads(response.text), response.headers
         self.__rate = int(headers[RATE_REMAINING])
 
@@ -52,7 +58,7 @@ class GithubSession:
         # which is exactly what datetime wants.
         self.__rater_reset_time = datetime.utcfromtimestamp(int(headers[RATE_RESET]))
 
-        return json_body, headers
+        return json_body, headers, response.text
 
     def set_credentials(self, personal_access_token: str) -> None:
         """Sets headers permanently, according to the given token,
