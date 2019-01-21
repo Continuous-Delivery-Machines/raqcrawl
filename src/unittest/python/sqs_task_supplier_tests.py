@@ -115,7 +115,7 @@ class SqsTaskSupplierTests(unittest.TestCase):
                                 wait_time=1)
 
         data = {'a': 'A', 'langs': {'C': 1234, 'python': 8765}}
-        response = queue.write_message(message=data)
+        response = queue.write_message(message_dict=data)
         assert_that(response, has_key('MD5OfMessageBody'))
         assert_that(response, not_(has_key('MD5OfMessageAttributes')))
         assert_that(response, has_key('MessageId'))
@@ -132,7 +132,7 @@ class SqsTaskSupplierTests(unittest.TestCase):
 
         data = {'a': 'A', 'langs': {'C': 1234, 'python': 8765}}
         attrs = {'key_name': {'StringValue': 'ma_val', 'DataType': 'String'}}
-        response = queue.write_message(message=data, message_attributes=attrs)
+        response = queue.write_message(message_dict=data, message_attributes_dict=attrs)
         assert_that(response, has_key('MD5OfMessageBody'))
         assert_that(response, has_key('MD5OfMessageAttributes'))
         assert_that(response, has_key('MessageId'))

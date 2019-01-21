@@ -41,13 +41,13 @@ class SqsMessageQueue:
         else:
             raise Exception("Received more Messages than intended")
 
-    def write_message(self, message: dict, message_attributes: dict = {}):
+    def write_message(self, message_dict: dict, message_attributes_dict: dict = {}):
         """Writes the provided dict JSON-encoded into the Msg Queue."""
-        msg_body = json.dumps(message)
+        msg_body = json.dumps(message_dict)
         response = self._msq_queue.send_message(
             MessageBody=msg_body,
             DelaySeconds=0,
-            MessageAttributes=message_attributes
+            MessageAttributes=message_attributes_dict
         )
         if "MessageId" not in response or "MD5OfMessageBody" not in response:
             raise Exception("")
