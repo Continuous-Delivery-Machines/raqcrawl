@@ -1,4 +1,5 @@
 """Encasulation of Github-API and session management."""
+import time
 from datetime import datetime
 from json import loads
 from typing import MutableMapping, Mapping, Tuple
@@ -14,10 +15,12 @@ class GithubSession:
     """Encapsulates Session on GitHub API for easy resource tracking and
     easier navigation by reducing redundancy."""
 
-    def __init__(self):
+    def __init__(self, wait_if_rate_exceeded: bool = False, min_rate_threshold_before_sleep: int = 5):
         self.__rate = None
         self.__rater_reset_time = None
         self.__session = Session()
+        self.__should_sleep = wait_if_rate_exceeded
+        self.__rate_threshold = min_rate_threshold_before_sleep
 
     def __del__(self):
         self.__session.close()
@@ -50,6 +53,9 @@ class GithubSession:
 
     def request_url(self, url) -> Tuple[Mapping, MutableMapping, str]:
         """Sends a get request against GitHub's API against the specified endpoint."""
+
+        self.sleep_if_needed()
+
         response = self.__session.get(url)
         json_body, headers = loads(response.text), response.headers
         self.__rate = int(headers[RATE_REMAINING])
@@ -67,3 +73,16 @@ class GithubSession:
         self.__session.headers.update({"Authorization": token_string})
         self.__rate = None
         self.__rater_reset_time = None
+
+    def sleep_if_needed(self):
+        if self.__rate is not None and self.__rate < self.__rate_threshold:
+            hibernate_start = datetime.utcnow()
+            wait_time = (hibernate_start - self.rate_reset_time).seconds
+            wait_time += 3
+            print('Rate reached {}/{}'.format(self.__rate, self.__rate_threshold))
+            print('Current UTC: {}'.format(hibernate_start.isoformat()))
+            print("Hibernating for {} seconds until {} (plus a bit)".format(
+                wait_time, self.rate_reset_time.isoformat())
+            )
+            time.sleep(wait_time)
+            print('Done hibernating since {}'.format(hibernate_start.isoformat()))

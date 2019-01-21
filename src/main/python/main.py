@@ -58,24 +58,27 @@ def run_crawler_with_config(config):
             print('bye bye')
             should_run = False
         if message.body_dict['task_type'] == 'repo':
-            print('Received repo_task')
-            print(message.body_dict)
-            print(message.message_attributes)
+            try:
+                print('Received repo_task')
+                print(message.body_dict)
+                print(message.message_attributes)
 
-            task = message.body_dict['repo_task']
+                task = message.body_dict['repo_task']
 
-            repo_path = working_path + "/{}".format(task['id'])
-            os.makedirs(repo_path)
+                repo_path = working_path + "/{}".format(task['id'])
+                os.makedirs(repo_path)
 
-            res_dict, headers, resp_body = github_session.request_url(task['api_url'])
-            metaf_name = repo_path + "/meta.json"
+                res_dict, headers, resp_body = github_session.request_url(task['api_url'])
+                metaf_name = repo_path + "/meta.json"
 
-            print('Metaf {}'.format(metaf_name))
+                print('Metaf {}'.format(metaf_name))
 
-            metaf = open(metaf_name, 'w')
-            metaf.write(resp_body)
-            metaf.flush()
-            metaf.close()
+                metaf = open(metaf_name, 'w')
+                metaf.write(resp_body)
+                metaf.flush()
+                metaf.close()
+            except FileExistsError as e:
+                print(e)
             print('Done')
         elif message.body_dict['task_type'] == 'refill':
             handle_refill_task(github_session, message, msg_queue)
