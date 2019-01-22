@@ -3,8 +3,8 @@ import datetime
 import os
 import random
 import string
+import subprocess
 import sys
-import tempfile
 
 import boto3
 
@@ -40,12 +40,16 @@ def run_crawler_with_config(config):
                                 queue_address=config['msg_queue_address'],
                                 msg_visibility_timeout=30)
 
-    working_temp_dir = tempfile.TemporaryDirectory(prefix='raq_crawler_{}'.format(STATS['RANDOM_ID']))
-    working_path = working_temp_dir.name
+    my_prefix = 'raq_crawler_{}'.format(STATS['RANDOM_ID'])
+    # working_temp_dir = tempfile.TemporaryDirectory()
+    # working_path = working_temp_dir.name
 
+    os.makedirs('/tmp/{}'.format(my_prefix))
+    working_path = '/tmp/{}'.format(my_prefix)
     should_run = True
-
+    STATS['ORIGIN_DIR'] = working_path
     while should_run:
+        os.chdir(STATS['ORIGIN_DIR'])
         message = msg_queue.pop_next_message()
         if github_session.rate is not None:
             print('Current rate left: {}'.format(github_session.rate))
@@ -67,7 +71,9 @@ def run_crawler_with_config(config):
 
                 repo_path = working_path + "/{}".format(task['id'])
                 os.makedirs(repo_path)
-
+            except FileExistsError as e:
+                print(e)
+            else:
                 res_dict, headers, resp_body = github_session.request_url(task['api_url'])
                 metaf_name = repo_path + "/meta.json"
 
@@ -77,8 +83,72 @@ def run_crawler_with_config(config):
                 metaf.write(resp_body)
                 metaf.flush()
                 metaf.close()
-            except FileExistsError as e:
-                print(e)
+
+                try:
+                    repo_git_path = repo_path + "/git_repo/"
+                    print("Cloning {}, {}".format(res_dict['id'], res_dict['full_name']))
+                    pop = subprocess.run(['git', 'clone', res_dict['clone_url'], repo_git_path], universal_newlines=True)
+                    pop.check_returncode()
+                except Exception as e:
+                    print('Aborting {}, {} because of error'.format(res_dict['id'], res_dict['full_name']))
+                    print(e)
+                else:
+                    os.chdir(repo_git_path)
+                    log_process = subprocess.run(['git', '--no-pager', 'log', '--pretty=%H', '--max-count=1'], stdout=subprocess.PIPE, encoding='utf-8', universal_newlines=True)
+                    initial_sha = log_process.stdout
+                    if initial_sha[-1] == '\n':
+                        initial_sha = initial_sha[:-1]
+                    agenda = [initial_sha]
+                    done_shas = []
+                    for current_sha in agenda:
+                        if current_sha in done_shas:
+                            continue
+                        if current_sha == '':
+                            continue
+                        delimiter = '###wtf###'
+                        parents_format = '--pretty=format:%P{}'.format(delimiter)
+                        combi_format = '--pretty=%H %T %P %N{}'.format(delimiter)
+                        show_commit_cmd = ['git', '--no-pager', 'show', '--shortstat', combi_format, current_sha]
+                        parents_cmd = ['git', '--no-pager', 'show', '--shortstat', parents_format, current_sha]
+
+                        try:
+                            parents_proc = subprocess.run(parents_cmd, stdout=subprocess.PIPE, encoding='unicode-escape', universal_newlines=True, stderr=subprocess.PIPE)
+                            parents_exit_code = parents_proc.returncode
+                            parents_out = parents_proc.stdout
+
+                            if parents_exit_code != 0:
+                                pass
+                            else:
+                                if (delimiter + "\n") not in parents_out:
+                                    pass
+                                parent_shas = parents_out.split(delimiter)[0].split(" ")
+                                if len(parent_shas) == 1 and parent_shas[0] == '':
+                                    pass
+                                agenda.extend(parent_shas)
+
+                            show_commit_proc = subprocess.run(show_commit_cmd, stdout=subprocess.PIPE, encoding='unicode-escape')
+
+                            show_commit_exit_code = show_commit_proc.returncode
+                            show_out = show_commit_proc.stdout
+
+                            if show_commit_exit_code != 0:
+                                pass
+                            else:
+                                x = show_out.split(delimiter)
+                                myout = x[0]
+                                leftover = ''.join(x[1:])
+                                shaf_name = repo_path + "/{}.json".format(current_sha)
+
+                                print('shaf {}'.format(shaf_name))
+
+                                shaf = open(shaf_name, 'w')
+                                shaf.write(myout)
+                                shaf.flush()
+                                shaf.close()
+                        except Exception as e:
+                            print(e)
+                            print(e)
+                        done_shas.append(current_sha)
             print('Done')
         elif message.body_dict['task_type'] == 'refill':
             handle_refill_task(github_session, message, msg_queue)
