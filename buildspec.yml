@@ -1,7 +1,6 @@
 version: 0.2
 
-phases:
-
+phases:cd
   install:
     commands:
       - pip install pybuilder
@@ -10,16 +9,6 @@ phases:
       - pip list
   pre_build:
     commands:
-      - |
-        if [ -d ".git" ]; then
-          export GIT_DESCRIBE=$(git describe)
-          echo "Version gitdescribed"
-        elif [ -z ${CODEBUILD_RESOLVED_SOURCE_VERSION+x} ]; then
-          exit 42
-        else
-          export GIT_DESCRIBE=0.0.CB0-g${CODEBUILD_RESOLVED_SOURCE_VERSION}
-          echo "Version codebuilded"
-        fi
       - export PROJECT_NAME=$(python -c "import build; build.print_name()")
   build:
     commands:
@@ -27,12 +16,10 @@ phases:
   post_build:
     commands:
       - find target/
-    finally:
-      - printenv
 artifacts:
   files:
     - '**/*'
-  name: $PROJECT_NAME-$GIT_DESCRIBE
+  name: ${PROJECT_NAME}-${PROJECT_VERSION}
   base-directory: target/dist/
   discard-paths: no
 
