@@ -17,8 +17,9 @@ RATE_REMAINING = 'X-RateLimit-Remaining'
 class GithubSessionTest(unittest.TestCase):
 
     def setUp(self):
-        self.__username = os.environ.get('RAQ_CRAWLER_TEST_GITHUB_USERNAME')
-        self.__personal_access_token = os.environ.get('RAQ_CRAWLER_TEST_GITHUB_TOKEN')
+        stage = os.environ.get('RAQ_CRAWLER_STAGE')
+        self.__username = os.environ.get('RAQ_CRAWLER_{}_GITHUB_USERNAME'.format(stage))
+        self.__personal_access_token = os.environ.get('RAQ_CRAWLER_{}_GITHUB_TOKEN'.format(stage))
 
     def test_request_github_api_root(self):
         github_session = GithubSession()

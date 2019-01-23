@@ -30,11 +30,13 @@ class SqsTaskSupplierTests(unittest.TestCase):
         of whether the test was successful or not. Any asserts are supposed to
         happen AFTER the queue has been cleaned for the next tests."""
 
-        cls.aws_id = os.environ.get('RAQ_CRAWLER_TEST_AWS_ID')
-        cls.aws_secret = os.environ.get('RAQ_CRAWLER_TEST_AWS_SECRET')
+        stage = os.environ.get('RAQ_CRAWLER_STAGE')
 
-        cls.queue_address = os.environ.get("RAQ_CRAWLER_TEST_MSG_QUEUE_ADDRESS")
-        cls.aws_region = os.environ.get("RAQ_CRAWLER_DEV_REGION_NAME")
+        cls.aws_id = os.environ.get('RAQ_CRAWLER_{}_AWS_ID'.format(stage))
+        cls.aws_secret = os.environ.get('RAQ_CRAWLER_{}_AWS_SECRET'.format(stage))
+
+        cls.queue_address = os.environ.get("RAQ_CRAWLER_{}_MSG_QUEUE_ADDRESS".format(stage))
+        cls.aws_region = os.environ.get("RAQ_CRAWLER_{}_REGION_NAME".format(stage))
         cls.boto_session = boto3.session.Session(aws_access_key_id=cls.aws_id,
                                                  aws_secret_access_key=cls.aws_secret,
                                                  region_name=cls.aws_region)
