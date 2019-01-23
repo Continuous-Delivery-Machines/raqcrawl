@@ -9,7 +9,7 @@ phases:
       - pip list
   pre_build:
     commands:
-      - export PROJECT_NAME=$(python -c "import build; build.print_name()")
+      - export PROJECT_NAME=$(python -c "import build; print(build.name))
   build:
     commands:
       - pyb -v clean install_dependencies run_unit_tests package

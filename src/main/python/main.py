@@ -1,5 +1,6 @@
 """Runs the Crawler with configuration given by the environment."""
 import datetime
+import json
 import os
 import random
 import string
@@ -82,15 +83,19 @@ def handle_repo_task(github_session, message, working_path):
         print(e)
         return 0x10
 
+    result_dict = {}
+
     repo_meta_dict, headers, resp_body = github_session.request_url(task['api_url'])
     meta_json_full_file_name = repo_task_path + "/meta.json"
-    print('Meta.json {}'.format(meta_json_full_file_name))
-    write_meta_json(meta_json_full_file_name, resp_body)
+    #print('Meta.json {}'.format(meta_json_full_file_name))
+    #write_meta_json(meta_json_full_file_name, resp_body)
+
+    result_dict['meta'] = repo_meta_dict
 
     try:
         repo_git_path = repo_task_path + "/git_repo/"
         print("Cloning {} {}".format(repo_meta_dict['id'], repo_meta_dict['full_name']))
-        clone_repository_into_directory(target_path=repo_git_path, clone_url=repo_meta_dict)
+        clone_repository_into_directory(target_path=repo_git_path, clone_url=repo_meta_dict['clone_url'])
     except Exception as e:
         print('Aborting {}, {} because of error'.format(repo_meta_dict['id'], repo_meta_dict['full_name']))
         print(e)
@@ -104,9 +109,12 @@ def handle_repo_task(github_session, message, working_path):
     if initial_sha[-1] == '\n':
         initial_sha = initial_sha[:-1]
 
+    result_dict['commits'] = []
+
     agenda = [initial_sha]
     done_shas = []
     for current_sha in agenda:
+        print('Working on sha {}'.format(current_sha))
         if current_sha in done_shas:
             continue
         if current_sha == '':
@@ -148,15 +156,24 @@ def handle_repo_task(github_session, message, working_path):
                 leftover = ''.join(x[1:])
                 shaf_name = repo_task_path + "/{}.json".format(current_sha)
 
-                print('shaf {}'.format(shaf_name))
+                result_dict['commits'].append({'content': myout})
 
-                shaf = open(shaf_name, 'w')
-                shaf.write(myout)
-                shaf.flush()
-                shaf.close()
+                print('Added {}'.format(myout))
+                # print('shaf {}'.format(shaf_name))
+                #
+                # shaf = open(shaf_name, 'w')
+                # shaf.write(myout)
+                # shaf.flush()
+                # shaf.close()
         except Exception as e:
             print(e)
         done_shas.append(current_sha)
+
+    final_content = json.dumps(result_dict)
+    repo_f = open(repo_task_path + '/result.json', 'w')
+    repo_f.write(final_content)
+    repo_f.flush()
+    repo_f.close()
     print('Done')
 
 
