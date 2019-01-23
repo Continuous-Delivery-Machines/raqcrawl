@@ -1,6 +1,5 @@
 version: 0.2
 
-phases:cd
   install:
     commands:
       - pip install pybuilder
