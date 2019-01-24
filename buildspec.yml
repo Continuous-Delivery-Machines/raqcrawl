@@ -9,10 +9,10 @@ phases:
       - pip list
   pre_build:
     commands:
-      - PROJECT_NAME=$(python -c "import build; print(build.name))
+      - PROJECT_NAME=$(python -c "import build; print(build.name)")
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - PACKAGE_LOCATION=target/dist/
-      - PACKAGE_NAME=${PACKAGE_LOCATION}$(python -c "import build; print(build.name))-$(python -c "import build; print(build.version))/
+      - PACKAGE_NAME=${PACKAGE_LOCATION}$(python -c "import build; print(build.name)")-$(python -c "import build; print(build.version)")/
   build:
     commands:
       - pyb -v clean install_dependencies run_unit_tests analyze package
