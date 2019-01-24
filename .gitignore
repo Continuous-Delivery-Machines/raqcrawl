@@ -5,6 +5,7 @@ artifacts/
 .mypy_cache/
 Docker/**/resources/
 temp_makemyday/
+.coverage
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
