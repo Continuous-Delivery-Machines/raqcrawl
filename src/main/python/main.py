@@ -285,20 +285,15 @@ def boto_session_and_sts_id(config):
     global GLOBAL
     ## Try boto3 without os variables, hoping for AWS instance
     try:
-        botos, sts_id = boto_session_from_aws_runtime(config)
+        botos = boto3.session.Session(region_name=config['region_name'])
+        sts_identifier = boto3_session.client('sts').get_caller_identity()
     except exceptions.NoCredentialsError as e:
         botos = boto3.session.Session(aws_access_key_id=config['aws_id'],
                                               aws_secret_access_key=config['aws_secret'],
                                               region_name=config['region_name'])
-        sts_id = botos.client('sts').get_caller_identity()
+        sts_identifier = botos.client('sts').get_caller_identity()
 
-    return botos, sts_id
-
-
-def boto_session_from_aws_runtime(config):
-    boto3_session = boto3.session.Session(region_name=config['region_name'])
-    sts_identity = boto3_session.client('sts').get_caller_identity()
-    return boto3_session, sts_identity
+    return botos, sts_identifier
 
 
 if __name__ == '__main__':
