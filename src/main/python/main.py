@@ -1,12 +1,15 @@
 """Runs the Crawler with configuration given by the environment."""
 import datetime
+import ftplib
 import json
 import os
 import random
+import shutil
 import string
 import sys
+from botocore import exceptions
 from subprocess import PIPE, run
-import shutil
+
 import boto3
 
 from github_session import GithubSession
@@ -16,8 +19,9 @@ from sqs_queue_capsuling import SqsMessageQueue
 def read_config_from_environment(stage: str = "DEV"):
     """Collects all environmental variables with a specific style and
     returns them as a dictionary."""
-    base = "RAQ_CRAWLER_" + stage + "_"
+    base = "RAQ_CRAWLER_" + stage.upper() + "_"
     conf = dict()
+    conf['STAGE'] = stage.lower()
     for key in (k for k in os.environ if k.startswith(base)):
         print(key)
         name = key[len(base):].lower()
@@ -25,16 +29,12 @@ def read_config_from_environment(stage: str = "DEV"):
     return conf
 
 
-def run_crawler_with_config(config):
+def run_crawler_with_config(config, boto3_session):
     """Instantiates connections and instances, ties them together and runs the crawler."""
     global GLOBAL
 
     github_session = GithubSession()
     github_session.set_credentials(personal_access_token=config['github_token'])
-
-    boto3_session = boto3.session.Session(aws_access_key_id=config['aws_id'],
-                                          aws_secret_access_key=config['aws_secret'],
-                                          region_name=config['region_name'])
 
     msg_queue = SqsMessageQueue(botosession=boto3_session,
                                 wait_time=20,
@@ -69,6 +69,27 @@ def run_crawler_with_config(config):
             GLOBAL['SHOULD_RUN'] = False
             msg_queue.write_message(message_dict={'task_type': 'stop'})
         message.delete()
+
+
+def upload_to_server(file_path):
+    ip = CONFIG['ftp_address']
+    uname = CONFIG['ftp_user']
+    passw = CONFIG['ftp_password']
+    ftp_conn = ftplib.FTP_TLS(ip)
+    ftp_conn.login(user=uname, passwd=passw)
+    ftp_conn.prot_p()
+
+    file_name = file_path.split('/')[-1]
+
+    target_path = "ftp/raq/results/{}".format(file_name)
+
+    if os.path.isfile(file_path):
+        fh = open(file_path, 'rb')
+        stor_cmd = 'STOR {}'.format(target_path)
+        ftp_conn.storbinary(stor_cmd, fh)
+        fh.close()
+    else:
+        print("Source File does not exist")
 
 
 def handle_repo_task(github_session, message, working_path, results_path):
@@ -149,12 +170,16 @@ def handle_repo_task(github_session, message, working_path, results_path):
     result_dict['GLOBAL'] = GLOBAL
 
     final_content = json.dumps(result_dict)
-    repo_f = open(results_path + '/{}.json'.format(result_dict['meta']['id']), 'w')
-    repo_f.write(final_content)
-    repo_f.flush()
-    repo_f.close()
+    result_json_f_path = results_path + '/{}.json'.format(result_dict['meta']['id'])
+    result_json_f = open(result_json_f_path, 'w')
+    result_json_f.write(final_content)
+    result_json_f.flush()
+    result_json_f.close()
 
     shutil.rmtree(repo_git_path)
+
+    upload_to_server(result_json_f_path)
+
     print('Done with task for {}'.format(repo_meta_dict['id']))
 
 
@@ -256,6 +281,26 @@ def handle_refill_task(github_session, message, msg_queue):
     print('refill_task done')
 
 
+def boto_session_and_sts_id(config):
+    global GLOBAL
+    ## Try boto3 without os variables, hoping for AWS instance
+    try:
+        botos, sts_id = boto_session_from_aws_runtime(config)
+    except exceptions.NoCredentialsError as e:
+        botos = boto3.session.Session(aws_access_key_id=config['aws_id'],
+                                              aws_secret_access_key=config['aws_secret'],
+                                              region_name=config['region_name'])
+        sts_id = botos.client('sts').get_caller_identity()
+
+    return botos, sts_id
+
+
+def boto_session_from_aws_runtime(config):
+    boto3_session = boto3.session.Session(region_name=config['region_name'])
+    sts_identity = boto3_session.client('sts').get_caller_identity()
+    return boto3_session, sts_identity
+
+
 if __name__ == '__main__':
     GLOBAL = {
         'START_TIMESTAMP': datetime.datetime.utcnow().isoformat(),
@@ -270,4 +315,8 @@ if __name__ == '__main__':
         CONFIG = read_config_from_environment()
         print(CONFIG)
 
-    run_crawler_with_config(CONFIG)
+    boto3_session, sts_id = boto_session_and_sts_id(CONFIG)
+    GLOBAL['STS_ARN'] = sts_id['Arn']
+    print(sts_id)
+    print(CONFIG)
+    run_crawler_with_config(CONFIG, boto3_session)
