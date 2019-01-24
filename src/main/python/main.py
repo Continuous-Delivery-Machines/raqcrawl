@@ -6,7 +6,7 @@ import random
 import string
 import sys
 from subprocess import PIPE, run
-
+import shutil
 import boto3
 
 from github_session import GithubSession
@@ -42,11 +42,11 @@ def run_crawler_with_config(config):
                                 msg_visibility_timeout=30)
 
     my_prefix = 'raq_crawler_{}'.format(GLOBAL['RANDOM_ID'])
-    # working_temp_dir = tempfile.TemporaryDirectory()
-    # working_path = working_temp_dir.name
 
-    os.makedirs('/tmp/{}'.format(my_prefix))
     working_path = '/tmp/{}'.format(my_prefix)
+    results_path = working_path + '/results/'
+    os.makedirs(working_path)
+    os.makedirs(results_path)
     GLOBAL['ORIGIN_DIR'] = working_path
     while GLOBAL['SHOULD_RUN']:
         os.chdir(GLOBAL['ORIGIN_DIR'])
@@ -62,7 +62,7 @@ def run_crawler_with_config(config):
             print('bye bye')
             GLOBAL['SHOULD_RUN'] = False
         if message.body_dict['task_type'] == 'repo':
-            handle_repo_task(github_session, message, working_path)
+            handle_repo_task(github_session, message, working_path, results_path)
         elif message.body_dict['task_type'] == 'refill':
             handle_refill_task(github_session, message, msg_queue)
         elif message.body_dict['task_type'] == 'kill-15':
@@ -71,14 +71,13 @@ def run_crawler_with_config(config):
         message.delete()
 
 
-def handle_repo_task(github_session, message, working_path):
+def handle_repo_task(github_session, message, working_path, results_path):
+    delimiter = b'\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x7b'
     try:
         task = message.body_dict['repo_task']
         print('Received repo_task')
         print(message.body_dict)
         print(message.message_attributes)
-        repo_task_path = working_path + "/{}".format(task['id'])
-        os.makedirs(repo_task_path)
     except FileExistsError as e:
         print(e)
         return 0x10
@@ -86,14 +85,15 @@ def handle_repo_task(github_session, message, working_path):
     result_dict = {}
 
     repo_meta_dict, headers, resp_body = github_session.request_url(task['api_url'])
-    meta_json_full_file_name = repo_task_path + "/meta.json"
-    #print('Meta.json {}'.format(meta_json_full_file_name))
-    #write_meta_json(meta_json_full_file_name, resp_body)
 
     result_dict['meta'] = repo_meta_dict
 
+    languages_dict, languages_headers, languages_resp_body = github_session.request_url(repo_meta_dict['languages_url'])
+
+    result_dict['languages'] = languages_dict
+
     try:
-        repo_git_path = repo_task_path + "/git_repo/"
+        repo_git_path = working_path + "/git_repo/"
         print("Cloning {} {}".format(repo_meta_dict['id'], repo_meta_dict['full_name']))
         clone_repository_into_directory(target_path=repo_git_path, clone_url=repo_meta_dict['clone_url'])
     except Exception as e:
@@ -102,14 +102,9 @@ def handle_repo_task(github_session, message, working_path):
         return
 
     os.chdir(repo_git_path)
-    log_process = run(['git', '--no-pager', 'log', '--pretty=%H', '--max-count=1'],
-                      stdout=PIPE, encoding='utf-8', universal_newlines=True)
-    initial_sha = log_process.stdout
+    initial_sha = git_log_get_initial_sha()
 
-    if initial_sha[-1] == '\n':
-        initial_sha = initial_sha[:-1]
-
-    result_dict['commits'] = []
+    result_dict['commits'] = {}
 
     agenda = [initial_sha]
     done_shas = []
@@ -120,61 +115,78 @@ def handle_repo_task(github_session, message, working_path):
         if current_sha == '':
             continue
 
-        delimiter = '###wtf###'
-        parents_format = '--pretty=format:%P{}'.format(delimiter)
-        combi_format = '--pretty=%H %T %P %N{}'.format(delimiter)
-        show_commit_cmd = ['git', '--no-pager', 'show', '--shortstat', combi_format, current_sha]
-        parents_cmd = ['git', '--no-pager', 'show', '--shortstat', parents_format, current_sha]
+        result_dict['commits'][current_sha] = {}
 
         try:
-            parents_proc = run(parents_cmd, stdout=PIPE, encoding='unicode-escape',
-                               universal_newlines=True, stderr=PIPE)
-            parents_exit_code = parents_proc.returncode
-            parents_out = parents_proc.stdout
+            parents_exit_code, parents_out = git_parent_shas_space_separated(current_sha, delimiter)
 
             if parents_exit_code != 0:
                 pass
             else:
-                if (delimiter + "\n") not in parents_out:
-                    pass
-                parent_shas = parents_out.split(delimiter)[0].split(" ")
+                parent_shas = parents_out.split(" ")
                 if len(parent_shas) == 1 and parent_shas[0] == '':
                     pass
-                agenda.extend(parent_shas)
+                else:
+                    agenda.extend(parent_shas)
+                    result_dict['commits'][current_sha]['parents'] = parent_shas
 
-            show_commit_proc = run(show_commit_cmd, stdout=PIPE,
-                                   encoding='unicode-escape')
+            message_exit_code, message_out = git_show_commit_msg(current_sha, delimiter)
 
-            show_commit_exit_code = show_commit_proc.returncode
-            show_out = show_commit_proc.stdout
-
-            if show_commit_exit_code != 0:
+            if message_exit_code != 0:
+                print("Failed git_show_commit_msg with exit code {}\nRepo {}\nSHA {}\nDelimiter {}"
+                      .format(message_exit_code, repo_meta_dict['id'], current_sha, delimiter))
                 pass
             else:
-                x = show_out.split(delimiter)
-                myout = x[0]
-                leftover = ''.join(x[1:])
-                shaf_name = repo_task_path + "/{}.json".format(current_sha)
+                result_dict['commits'][current_sha]['message'] = message_out
+                print('Added {}'.format(message_out))
 
-                result_dict['commits'].append({'content': myout})
-
-                print('Added {}'.format(myout))
-                # print('shaf {}'.format(shaf_name))
-                #
-                # shaf = open(shaf_name, 'w')
-                # shaf.write(myout)
-                # shaf.flush()
-                # shaf.close()
         except Exception as e:
+            print("Exception occured")
             print(e)
         done_shas.append(current_sha)
 
+    result_dict['CONFIG'] = CONFIG
+    result_dict['GLOBAL'] = GLOBAL
+
     final_content = json.dumps(result_dict)
-    repo_f = open(repo_task_path + '/result.json', 'w')
+    repo_f = open(results_path + '/{}.json'.format(result_dict['meta']['id']), 'w')
     repo_f.write(final_content)
     repo_f.flush()
     repo_f.close()
-    print('Done')
+
+    shutil.rmtree(repo_git_path)
+    print('Done with task for {}'.format(repo_meta_dict['id']))
+
+
+def git_log_get_initial_sha():
+    log_process = run(['git', '--no-pager', 'log', '--pretty=%H', '--max-count=1'],
+                      stdout=PIPE, encoding='utf-8', universal_newlines=True)
+    initial_sha = log_process.stdout
+    if initial_sha[-1] == '\n':
+        initial_sha = initial_sha[:-1]
+    return initial_sha
+
+
+def git_show_commit_msg(current_sha, delimiter):
+    combi_format = '--pretty=%B{}'.format(delimiter.decode())
+    show_commit_cmd = ['git', '--no-pager', 'show', '--shortstat', combi_format, current_sha]
+    show_commit_proc = run(show_commit_cmd, stdout=PIPE, )
+    show_commit_out_bytes = show_commit_proc.stdout
+    show_commit_out_bytes_target = show_commit_out_bytes[:show_commit_out_bytes.find(delimiter)]
+    show_commit_exit_code = show_commit_proc.returncode
+    show_out = show_commit_out_bytes_target.decode('unicode-escape')
+    return show_commit_exit_code, show_out
+
+
+def git_parent_shas_space_separated(current_sha, delimiter):
+    parents_format = '--pretty=format:%P{}'.format(delimiter.decode())
+    parents_cmd = ['git', '--no-pager', 'show', '--shortstat', parents_format, current_sha]
+    parents_proc = run(parents_cmd, stdout=PIPE, stderr=PIPE)
+    parents_exit_code = parents_proc.returncode
+    parents_out_bytes = parents_proc.stdout
+    parents_out_bytes_target = parents_out_bytes[:parents_out_bytes.find(delimiter)]
+    parents_out = parents_out_bytes_target.decode('unicode-escape')
+    return parents_exit_code, parents_out
 
 
 def clone_repository_into_directory(target_path: str, clone_url: str):
