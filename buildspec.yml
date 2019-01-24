@@ -19,7 +19,7 @@ phases:
       - pyb -v clean install_dependencies run_unit_tests analyze package
   post_build:
     commands:
-      - tarballing ${PACKAGE_NAME}
+      - echo tarballing ${PACKAGE_NAME}
       - ARTIFACT_ZIP=artifact.tar.gz
       - tar -czvf ${ARTIFACT_ZIP} ${PACKAGE_NAME}
 artifacts:
