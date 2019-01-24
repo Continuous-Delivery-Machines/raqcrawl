@@ -16,9 +16,6 @@ class SqsTaskSupplierTests(unittest.TestCase):
     SQS Msg Queue in TEST stage provided by the environment.
 
     Purges the content of the provided Queue."""
-    aws_id = None
-    aws_secret = None
-    queue_address = None
 
     @classmethod
     def setUpClass(cls):
@@ -37,9 +34,17 @@ class SqsTaskSupplierTests(unittest.TestCase):
 
         cls.queue_address = os.environ.get("RAQ_CRAWLER_{}_MSG_QUEUE_ADDRESS".format(stage))
         cls.aws_region = os.environ.get("RAQ_CRAWLER_{}_REGION_NAME".format(stage))
-        cls.boto_session = boto3.session.Session(aws_access_key_id=cls.aws_id,
-                                                 aws_secret_access_key=cls.aws_secret,
-                                                 region_name=cls.aws_region)
+        try:
+            cls.boto_session = boto3.session.Session(region_name=cls.aws_region)
+            print("Using AWS environ")
+            sts_identifier = cls.boto_session.client('sts').get_caller_identity()
+        except exceptions.NoCredentialsError:
+            cls.boto_session = boto3.session.Session(aws_access_key_id=cls.aws_id,
+                                                     aws_secret_access_key=cls.aws_secret,
+                                                     region_name=cls.aws_region)
+            print("Using own environ")
+
+
         cls.msg_queue = cls.boto_session.resource('sqs').Queue(cls.queue_address)
         cls.msg_queue.load()
         for i in range(1, 10):
