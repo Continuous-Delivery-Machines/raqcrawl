@@ -12,16 +12,16 @@ phases:
     commands:
       - PROJECT_NAME=$(python -c "import build; print(build.name)")
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - PACKAGE_LOCATION=target/dist/
-      - PACKAGE_NAME=${PACKAGE_LOCATION}$(python -c "import build; print(build.name)")-$(python -c "import build; print(build.version)")/
+      - PACKAGE_PATH=target/dist/${PACKAGE_LOCATION}$(python -c "import build; print(build.name)")-$(python -c "import build; print(build.version)")/
   build:
     commands:
       - pyb -v clean install_dependencies analyze package
   post_build:
     commands:
-      - echo tarballing ${PACKAGE_NAME}
+      - echo tarballing ${PACKAGE_PATH}
       - ARTIFACT_ZIP=raqc.tar.gz
-      - tar -czvf ${ARTIFACT_ZIP} ${PACKAGE_NAME}
+      - cd ${PACKAGE_PATH}
+      - tar -czvf ${ARTIFACT_ZIP} .
 artifacts:
   files:
     - raqc.tar.gz
