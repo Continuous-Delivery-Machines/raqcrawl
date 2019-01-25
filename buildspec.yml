@@ -16,7 +16,7 @@ phases:
       - PACKAGE_NAME=${PACKAGE_LOCATION}$(python -c "import build; print(build.name)")-$(python -c "import build; print(build.version)")/
   build:
     commands:
-      - pyb -v clean install_dependencies run_unit_tests analyze package
+      - pyb -v clean install_dependencies analyze package
   post_build:
     commands:
       - echo tarballing ${PACKAGE_NAME}
