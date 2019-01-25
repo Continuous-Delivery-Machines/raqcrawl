@@ -20,8 +20,13 @@ phases:
   post_build:
     commands:
       - echo tarballing ${PACKAGE_NAME}
-      - ARTIFACT_ZIP=artifact.tar.gz
+      - ARTIFACT_ZIP=raqc.tar.gz
       - tar -czvf ${ARTIFACT_ZIP} ${PACKAGE_NAME}
 artifacts:
-  files: artifact.tar.gz
+  files:
+    - raqc.tar.gz
+    - requirements.txt
+    - Docker/Dockerfile
+    - Docker/buildspec.yml
+  discard-paths: yes
 
