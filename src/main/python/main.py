@@ -7,6 +7,8 @@ import random
 import shutil
 import string
 import sys
+import time
+
 from botocore import exceptions
 from subprocess import PIPE, run
 
@@ -297,6 +299,8 @@ def boto_session_and_sts_id(config):
 
 
 if __name__ == '__main__':
+    feature_switch = True
+
     GLOBAL = {
         'START_TIMESTAMP': datetime.datetime.utcnow().isoformat(),
         'RANDOM_ID': ''.join(random.choices(string.ascii_letters + string.digits, k=32)),
@@ -312,6 +316,12 @@ if __name__ == '__main__':
 
     boto3_session, sts_id = boto_session_and_sts_id(CONFIG)
     GLOBAL['STS_ARN'] = sts_id['Arn']
-    print(sts_id)
-    print(CONFIG)
-    run_crawler_with_config(CONFIG, boto3_session)
+    #print(GLOBAL['STS_ARN'])
+    #print(GLOBAL['GITHUB_USERNAME'])
+    if feature_switch:
+        for i in range(1, 50):
+            print("Hi #{}".format(i))
+            time.sleep(5)
+        exit(0)
+    else:
+        run_crawler_with_config(CONFIG, boto3_session)
