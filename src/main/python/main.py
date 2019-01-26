@@ -331,7 +331,7 @@ def boto_session_and_sts_id(config):
 
 
 if __name__ == '__main__':
-    LOG_LEVEL = 2
+    LOG_LEVEL = 4
     GLOBAL = {
         'START_TIMESTAMP': datetime.datetime.utcnow().isoformat(),
         'RANDOM_ID': ''.join(random.choices(string.ascii_letters + string.digits, k=32)),
