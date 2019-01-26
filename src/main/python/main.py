@@ -8,7 +8,6 @@ import random
 import shutil
 import string
 import sys
-import time
 from subprocess import PIPE, run
 
 import boto3
@@ -46,7 +45,7 @@ def log(*objects, sep=' ', end='\n', file=sys.stdout, flush=False, level=6):
         stuff.append(timestamp)
         stuff.append(caller)
         stuff.extend(objects)
-        print(*stuff, sep=sep, end=end, file=file, flush=flush)
+        print(*stuff, sep=sep, end=end, flush=flush, file=sys.stderr)
 
 
 def read_config_from_environment(stage: str = "DEV"):
@@ -125,7 +124,6 @@ def upload_to_server(file_path):
     fh.close()
 
 
-
 def handle_repo_task(github_session, message, working_path, results_path):
     delimiter = b'\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x7b'
     try:
@@ -136,6 +134,8 @@ def handle_repo_task(github_session, message, working_path, results_path):
     except FileExistsError as e:
         error(e)
         return 0x10
+
+    warn('Working on repo with id {}'.format(task['id']))
 
     result_dict = {}
 
@@ -189,7 +189,7 @@ def handle_repo_task(github_session, message, working_path, results_path):
 
             if message_exit_code != 0:
                 warn("Failed git_show_commit_msg with exit code {}\nRepo {}\nSHA {}\nDelimiter {}"
-                      .format(message_exit_code, repo_meta_dict['id'], current_sha, delimiter))
+                     .format(message_exit_code, repo_meta_dict['id'], current_sha, delimiter))
                 pass
             else:
                 result_dict['commits'][current_sha]['message'] = message_out
@@ -329,8 +329,9 @@ def boto_session_and_sts_id(config):
 
     return botos, sts_identifier
 
+
 if __name__ == '__main__':
-    LOG_LEVEL = 1
+    LOG_LEVEL = 2
     GLOBAL = {
         'START_TIMESTAMP': datetime.datetime.utcnow().isoformat(),
         'RANDOM_ID': ''.join(random.choices(string.ascii_letters + string.digits, k=32)),
