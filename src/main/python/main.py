@@ -1,6 +1,7 @@
 """Runs the Crawler with configuration given by the environment."""
 import datetime
 import ftplib
+import inspect
 import json
 import os
 import random
@@ -8,14 +9,44 @@ import shutil
 import string
 import sys
 import time
-
-from botocore import exceptions
 from subprocess import PIPE, run
 
 import boto3
+from botocore import exceptions
 
 from github_session import GithubSession
 from sqs_queue_capsuling import SqsMessageQueue
+
+
+def debug(*objects, sep=' ', end='\n', file=sys.stdout, flush=False):
+    log(*objects, sep=' ', end='\n', file=sys.stdout, flush=False, level=5)
+
+
+def info(*objects, sep=' ', end='\n', file=sys.stdout, flush=False):
+    log(*objects, sep=' ', end='\n', file=sys.stdout, flush=False, level=4)
+
+
+def warn(*objects, sep=' ', end='\n', file=sys.stdout, flush=False):
+    log(*objects, sep=' ', end='\n', file=sys.stdout, flush=False, level=2)
+
+
+def error(*objects, sep=' ', end='\n', file=sys.stdout, flush=False):
+    log(*objects, sep=' ', end='\n', file=sys.stdout, flush=False, level=1)
+
+
+def conf_info(*objects, sep=' ', end='\n', file=sys.stdout, flush=False):
+    log(*objects, sep=' ', end='\n', file=sys.stdout, flush=False, level=1)
+
+
+def log(*objects, sep=' ', end='\n', file=sys.stdout, flush=False, level=6):
+    if level <= LOG_LEVEL:
+        stuff = []
+        timestamp = datetime.datetime.now().strftime('[%H:%M:%S]')
+        caller = "[{}]".format(inspect.stack()[2].function)
+        stuff.append(timestamp)
+        stuff.append(caller)
+        stuff.extend(objects)
+        print(*stuff, sep=sep, end=end, file=file, flush=flush)
 
 
 def read_config_from_environment(stage: str = "DEV"):
@@ -25,7 +56,6 @@ def read_config_from_environment(stage: str = "DEV"):
     conf = dict()
     conf['STAGE'] = stage.lower()
     for key in (k for k in os.environ if k.startswith(base)):
-        print(key)
         name = key[len(base):].lower()
         conf[name] = os.environ[key]
     return conf
@@ -54,26 +84,30 @@ def run_crawler_with_config(config, boto3_session):
         os.chdir(GLOBAL['ORIGIN_DIR'])
         message = msg_queue.pop_next_message()
         if github_session.rate is not None:
-            print('Current rate left: {}'.format(github_session.rate))
-            print('Resets at {}'.format(github_session.rate_reset_time.isoformat()))
-        print('Received Msg')
-        print(message.body_raw)
+            info('Current rate left: {}'.format(github_session.rate))
+            info('Resets at {}'.format(github_session.rate_reset_time.isoformat()))
+        debug('Received Msg')
+        debug(message.body_raw)
 
         if 'task_type' not in message.body_dict:
-            print(message.body_dict)
-            print('bye bye')
-            GLOBAL['SHOULD_RUN'] = False
+            warn("Received Message without task_type. '{}'\nIgnoring message and deleting it.".format(message.body_raw))
+            message.delete()
         if message.body_dict['task_type'] == 'repo':
             handle_repo_task(github_session, message, working_path, results_path)
+            message.delete()
         elif message.body_dict['task_type'] == 'refill':
             handle_refill_task(github_session, message, msg_queue)
+            message.delete()
         elif message.body_dict['task_type'] == 'kill-15':
+            error('Received kill-15 task.')
             GLOBAL['SHOULD_RUN'] = False
-            msg_queue.write_message(message_dict={'task_type': 'stop'})
-        message.delete()
+            msg_queue.write_message(message_dict={'task_type': 'kill-15'})
 
 
 def upload_to_server(file_path):
+    if not os.path.isfile(file_path):
+        error("Source file {} does not exist")
+
     ip = CONFIG['ftp_address']
     uname = CONFIG['ftp_user']
     passw = CONFIG['ftp_password']
@@ -85,24 +119,22 @@ def upload_to_server(file_path):
 
     target_path = "ftp/raq/results/{}".format(file_name)
 
-    if os.path.isfile(file_path):
-        fh = open(file_path, 'rb')
-        stor_cmd = 'STOR {}'.format(target_path)
-        ftp_conn.storbinary(stor_cmd, fh)
-        fh.close()
-    else:
-        print("Source File does not exist")
+    fh = open(file_path, 'rb')
+    stor_cmd = 'STOR {}'.format(target_path)
+    ftp_conn.storbinary(stor_cmd, fh)
+    fh.close()
+
 
 
 def handle_repo_task(github_session, message, working_path, results_path):
     delimiter = b'\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x7b'
     try:
         task = message.body_dict['repo_task']
-        print('Received repo_task')
-        print(message.body_dict)
-        print(message.message_attributes)
+        info('Received repo_task')
+        debug(message.body_dict)
+        debug(message.message_attributes)
     except FileExistsError as e:
-        print(e)
+        error(e)
         return 0x10
 
     result_dict = {}
@@ -117,11 +149,11 @@ def handle_repo_task(github_session, message, working_path, results_path):
 
     try:
         repo_git_path = working_path + "/git_repo/"
-        print("Cloning {} {}".format(repo_meta_dict['id'], repo_meta_dict['full_name']))
+        info("Cloning {} {}".format(repo_meta_dict['id'], repo_meta_dict['full_name']))
         clone_repository_into_directory(target_path=repo_git_path, clone_url=repo_meta_dict['clone_url'])
     except Exception as e:
-        print('Aborting {}, {} because of error'.format(repo_meta_dict['id'], repo_meta_dict['full_name']))
-        print(e)
+        error('Aborting {}, {} because of error'.format(repo_meta_dict['id'], repo_meta_dict['full_name']))
+        error(e)
         return
 
     os.chdir(repo_git_path)
@@ -132,7 +164,7 @@ def handle_repo_task(github_session, message, working_path, results_path):
     agenda = [initial_sha]
     done_shas = []
     for current_sha in agenda:
-        print('Working on sha {}'.format(current_sha))
+        debug('Working on sha {}'.format(current_sha))
         if current_sha in done_shas:
             continue
         if current_sha == '':
@@ -156,16 +188,16 @@ def handle_repo_task(github_session, message, working_path, results_path):
             message_exit_code, message_out = git_show_commit_msg(current_sha, delimiter)
 
             if message_exit_code != 0:
-                print("Failed git_show_commit_msg with exit code {}\nRepo {}\nSHA {}\nDelimiter {}"
+                warn("Failed git_show_commit_msg with exit code {}\nRepo {}\nSHA {}\nDelimiter {}"
                       .format(message_exit_code, repo_meta_dict['id'], current_sha, delimiter))
                 pass
             else:
                 result_dict['commits'][current_sha]['message'] = message_out
-                print('Added {}'.format(message_out))
+                debug('Added {}'.format(message_out))
 
         except Exception as e:
-            print("Exception occured")
-            print(e)
+            error("Exception occured")
+            error(e)
         done_shas.append(current_sha)
 
     result_dict['CONFIG'] = CONFIG
@@ -182,7 +214,7 @@ def handle_repo_task(github_session, message, working_path, results_path):
 
     upload_to_server(result_json_f_path)
 
-    print('Done with task for {}'.format(repo_meta_dict['id']))
+    info('Done with task for {}'.format(repo_meta_dict['id']))
 
 
 def git_log_get_initial_sha():
@@ -231,9 +263,9 @@ def write_meta_json(metaf_name, resp_body):
 def handle_refill_task(github_session, message, msg_queue):
     global GLOBAL
 
-    print('Received refill_task')
-    print(message.body_dict)
-    print(message.message_attributes)
+    info('Received refill_task')
+    debug(message.body_dict)
+    debug(message.message_attributes)
     url = "https://api.github.com/repositories?since={}".format(message.body_dict['refill_task']['since_id'])
     res_dict, headers, resp_body = github_session.request_url(url)
     last_id = 0
@@ -257,7 +289,7 @@ def handle_refill_task(github_session, message, msg_queue):
             },
         }
         last_id = int(repo_dict['id'])
-        print('refill_task adding id {} for repo {}'.format(repo_dict['id'], repo_dict['full_name']))
+        debug('refill_task adding id {} for repo {}'.format(repo_dict['id'], repo_dict['full_name']))
         msg_queue.write_message(message_dict=task,
                                 message_attributes_dict=task_attr)
     task = {
@@ -276,11 +308,11 @@ def handle_refill_task(github_session, message, msg_queue):
             'StringValue': GLOBAL['START_TIMESTAMP']
         },
     }
-    print('refill_task adding since id {} '.format(last_id))
+    info('refill_task adding since id {} '.format(last_id))
     msg_queue.write_message(message_dict=task,
                             message_attributes_dict=task_attr)
 
-    print('refill_task done')
+    info('refill_task done')
 
 
 def boto_session_and_sts_id(config):
@@ -291,37 +323,30 @@ def boto_session_and_sts_id(config):
         sts_identifier = botos.client('sts').get_caller_identity()
     except exceptions.NoCredentialsError as e:
         botos = boto3.session.Session(aws_access_key_id=config['aws_id'],
-                                              aws_secret_access_key=config['aws_secret'],
-                                              region_name=config['region_name'])
+                                      aws_secret_access_key=config['aws_secret'],
+                                      region_name=config['region_name'])
         sts_identifier = botos.client('sts').get_caller_identity()
 
     return botos, sts_identifier
 
-
 if __name__ == '__main__':
-    feature_switch = True
-
+    LOG_LEVEL = 1
     GLOBAL = {
         'START_TIMESTAMP': datetime.datetime.utcnow().isoformat(),
         'RANDOM_ID': ''.join(random.choices(string.ascii_letters + string.digits, k=32)),
         'SHOULD_RUN': True
     }
-    print("START_TIMESTAMP: {}".format(GLOBAL['START_TIMESTAMP']))
-    print("RANDOM_ID: {}".format(GLOBAL['RANDOM_ID']))
+
+    conf_info("START_TIMESTAMP: {}".format(GLOBAL['START_TIMESTAMP']))
+    conf_info("RANDOM_ID: {}".format(GLOBAL['RANDOM_ID']))
+
     if len(sys.argv) > 1:
         CONFIG = read_config_from_environment(sys.argv[1])
     else:
         CONFIG = read_config_from_environment()
-        print(CONFIG)
+    debug(CONFIG)
 
     boto3_session, sts_id = boto_session_and_sts_id(CONFIG)
     GLOBAL['STS_ARN'] = sts_id['Arn']
-    #print(GLOBAL['STS_ARN'])
-    #print(GLOBAL['GITHUB_USERNAME'])
-    if feature_switch:
-        for i in range(1, 50):
-            print("Ho #{}".format(i))
-            time.sleep(5)
-        exit(0)
-    else:
-        run_crawler_with_config(CONFIG, boto3_session)
+
+    run_crawler_with_config(CONFIG, boto3_session)
