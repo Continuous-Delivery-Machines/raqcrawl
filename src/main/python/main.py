@@ -320,7 +320,7 @@ if __name__ == '__main__':
     #print(GLOBAL['GITHUB_USERNAME'])
     if feature_switch:
         for i in range(1, 50):
-            print("Hi #{}".format(i))
+            print("Ho #{}".format(i))
             time.sleep(5)
         exit(0)
     else:
