@@ -8,4 +8,4 @@ RUN pip install -r /app/install/requirements.txt
 
 COPY raqc/ /app/raq-crawler/
 
-CMD find /app && python /app/raq-crawler/main.py ${RAQ_CRAWLER_STAGE}
+CMD python /app/raq-crawler/main.py ${RAQ_CRAWLER_STAGE}
