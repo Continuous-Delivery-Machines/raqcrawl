@@ -362,5 +362,10 @@ if __name__ == '__main__':
     try:
         run_crawler_with_config(CONFIG, boto3_session)
     except Exception as e:
-        error("Something horrible happended", e, globals(), locals())
+        error("Something horrible happended")
+        error(e)
+        error("Globals")
+        error(globals())
+        error("Locals")
+        error(locals())
         error('rip')
