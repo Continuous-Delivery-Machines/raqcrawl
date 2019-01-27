@@ -223,10 +223,11 @@ def git_log_get_initial_sha():
     log_out = log_process.stdout
     if log_process.returncode == 128:
         initial_sha = None
-    if log_out[-1] == '\n':
-        initial_sha = log_out[:-1]
     else:
-        return None
+        if log_out[-1] == '\n':
+            initial_sha = log_out[:-1]
+        else:
+            initial_sha = None
     return initial_sha
 
 
