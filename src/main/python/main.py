@@ -347,7 +347,6 @@ if __name__ == '__main__':
     conf_info("START_TIMESTAMP: {}".format(GLOBAL['START_TIMESTAMP']))
     conf_info("RANDOM_ID: {}".format(GLOBAL['RANDOM_ID']))
 
-
     if len(sys.argv) > 1:
         CONFIG = read_config_from_environment(sys.argv[1])
     else:
@@ -360,4 +359,8 @@ if __name__ == '__main__':
     conf_info(GLOBAL)
     conf_info(CONFIG)
 
-    run_crawler_with_config(CONFIG, boto3_session)
+    try:
+        run_crawler_with_config(CONFIG, boto3_session)
+    except Exception as e:
+        error("Something horrible happended", e, globals(), locals())
+        error('rip')
