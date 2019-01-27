@@ -15,6 +15,7 @@ phases:
       - PACKAGE_PATH=target/dist/${PACKAGE_LOCATION}$(python -c "import build; print(build.name)")-$(python -c "import build; print(build.version)")/
   build:
     commands:
+      - pylint --rcfile=pylintrc src/main/python/
       - pyb -v clean install_dependencies analyze package
   post_build:
     commands:
