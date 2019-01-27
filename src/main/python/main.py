@@ -160,10 +160,10 @@ def handle_repo_task(github_session, message, working_path, results_path):
     initial_sha = git_log_get_initial_sha()
 
     result_dict['commits'] = {}
-    agenda = []
-    if initial_sha is not None:
-        agenda.append(initial_sha)
+    if initial_sha is None:
+        return None
     done_shas = []
+    agenda = [initial_sha]
     for current_sha in agenda:
         debug('Working on sha {}'.format(current_sha))
         if current_sha in done_shas:
