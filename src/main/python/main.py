@@ -220,11 +220,13 @@ def handle_repo_task(github_session, message, working_path, results_path):
 def git_log_get_initial_sha():
     log_process = run(['git', '--no-pager', 'log', '--pretty=%H', '--max-count=1'],
                       stdout=PIPE, encoding='utf-8', universal_newlines=True)
-    initial_sha = log_process.stdout
+    log_out = log_process.stdout
     if log_process.returncode == 128:
-        retinitial_sha = None
-    if initial_sha[-1] == '\n':
-        initial_sha = initial_sha[:-1]
+        initial_sha = None
+    if log_out[-1] == '\n':
+        initial_sha = log_out[:-1]
+    else:
+        return None
     return initial_sha
 
 
