@@ -205,7 +205,7 @@ def handle_repo_task(github_session, message, working_path, results_path):
     result_dict['GLOBAL'] = GLOBAL
 
     final_content = json.dumps(result_dict)
-    result_json_f_path = results_path + '/{}.json'.format(result_dict['meta']['id'])
+    result_json_f_path = results_path + '/{}-steak.json'.format(result_dict['meta']['id'])
     result_json_f = open(result_json_f_path, 'w')
     result_json_f.write(final_content)
     result_json_f.flush()
